@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>效期查核排程工具</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        h1 {
+            color: #333;
+        }
+        .schedule-container {
+            background: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+        input[type='date'], input[type='time'], button {
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="schedule-container">
+        <h1>效期查核排程工具</h1>
+        <label for="date">选择日期:</label>
+        <input type="date" id="date">
+        <label for="time">选择时间:</label>
+        <input type="time" id="time">
+        <button id="schedule-button">排程</button>
+        <p id="schedule-output"></p>
+    </div>
+    <script>
+        document.getElementById('schedule-button').onclick = function() {
+            var date = document.getElementById('date').value;
+            var time = document.getElementById('time').value;
+            if(date && time) {
+                document.getElementById('schedule-output').innerText = '排程成功: ' + date + ' ' + time;
+            } else {
+                document.getElementById('schedule-output').innerText = '请填写所有字段!';
+            }
+        };
+    </script>
+</body>
+</html>
