@@ -1,0 +1,1211 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>效期查核排程工具</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root {
+  --bg: #F5F4F0;
+  --surface: #FAFAF8;
+  --surface2: #EEECEA;
+  --border: #D8D6D0;
+  --border2: #C8C5BE;
+  --text: #1A1916;
+  --text2: #5C5A54;
+  --text3: #9C9A94;
+  --accent: #1A1916;
+  --green: #1D7A4E;
+  --green-bg: #E8F5EE;
+  --blue: #1A4FAA;
+  --blue-bg: #E8EEFA;
+  --amber: #8A5A00;
+  --amber-bg: #FBF2DC;
+  --red: #AA2020;
+  --red-bg: #FAEAEA;
+  --radius: 10px;
+  --radius-sm: 6px;
+  --shadow: 0 1px 3px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.04);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Noto Sans TC', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+/* ── HEADER ── */
+.header {
+  background: var(--text);
+  color: #F5F4F0;
+  padding: 0 32px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.header-logo {
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: .04em;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.header-logo span {
+  opacity: .4;
+  font-weight: 300;
+}
+.header-tag {
+  font-size: 11px;
+  background: rgba(255,255,255,.12);
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-family: 'DM Mono', monospace;
+  letter-spacing: .02em;
+}
+/* ── LAYOUT ── */
+.app {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 32px 24px 80px;
+}
+/* ── STEP NAV ── */
+.step-nav {
+  display: flex;
+  gap: 0;
+  margin-bottom: 32px;
+  border-bottom: 1px solid var(--border);
+}
+.step-btn {
+  padding: 12px 0;
+  margin-right: 28px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text3);
+  cursor: pointer;
+  border: none;
+  background: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color .2s, border-color .2s;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.step-btn .num {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: var(--surface2);
+  color: var(--text3);
+  font-size: 11px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'DM Mono', monospace;
+  transition: background .2s, color .2s;
+}
+.step-btn.active { color: var(--text); border-bottom-color: var(--text); }
+.step-btn.active .num { background: var(--text); color: #fff; }
+.step-btn.done .num { background: var(--green); color: #fff; }
+.step-btn.done { color: var(--text2); }
+.panel { display: none; animation: fadeIn .25s ease; }
+.panel.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+/* ── SECTION HEADING ── */
+.sec-heading {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 14px;
+}
+/* ── UPLOAD ZONES ── */
+.upload-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.upload-zone {
+  background: var(--surface);
+  border: 1.5px dashed var(--border2);
+  border-radius: var(--radius);
+  padding: 20px 16px;
+  cursor: pointer;
+  transition: border-color .2s, background .2s;
+  text-align: center;
+  position: relative;
+}
+.upload-zone:hover { border-color: var(--text2); background: var(--surface2); }
+.upload-zone.done { border-style: solid; border-color: var(--green); background: var(--green-bg); }
+.upload-zone.error { border-style: solid; border-color: var(--red); background: var(--red-bg); }
+.upload-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.uz-icon { font-size: 28px; margin-bottom: 8px; line-height: 1; }
+.uz-title { font-size: 13px; font-weight: 500; margin-bottom: 4px; }
+.uz-sub { font-size: 11px; color: var(--text3); }
+.uz-status { font-size: 11px; font-weight: 500; margin-top: 8px; color: var(--green); display: none; }
+.upload-zone.done .uz-status { display: block; }
+.upload-zone.done .uz-sub { display: none; }
+/* ── CARDS ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow);
+}
+.card-title { font-size: 13px; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+/* ── RULE GRID ── */
+.rule-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.rule-item label {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text2);
+  margin-bottom: 5px;
+  letter-spacing: .03em;
+}
+.rule-item select, .rule-item input[type=text], .rule-item input[type=number] {
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  background: white;
+  color: var(--text);
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color .2s;
+}
+.rule-item select:focus, .rule-item input:focus { border-color: var(--text); }
+/* ── TOGGLE ── */
+.toggle-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 9px 0;
+  border-top: 1px solid var(--border);
+  font-size: 13px; color: var(--text2);
+}
+.toggle-row:first-of-type { border-top: none; }
+.toggle-wrap { position: relative; width: 38px; height: 22px; flex-shrink: 0; }
+.toggle-wrap input { opacity: 0; width: 0; height: 0; position: absolute; }
+.toggle-track {
+  position: absolute; inset: 0;
+  background: var(--border2);
+  border-radius: 22px;
+  cursor: pointer;
+  transition: background .25s;
+}
+.toggle-track::before {
+  content: '';
+  position: absolute;
+  width: 16px; height: 16px;
+  background: white;
+  border-radius: 50%;
+  top: 3px; left: 3px;
+  transition: transform .25s;
+  box-shadow: 0 1px 3px rgba(0,0,0,.2);
+}
+input:checked + .toggle-track { background: var(--green); }
+input:checked + .toggle-track::before { transform: translateX(16px); }
+/* ── BUTTON ── */
+.btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 10px 20px;
+  border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 500;
+  cursor: pointer; border: none;
+  font-family: inherit;
+  transition: opacity .15s, transform .1s;
+}
+.btn:active { transform: scale(.98); }
+.btn-primary { background: var(--text); color: white; }
+.btn-primary:hover { opacity: .85; }
+.btn-primary:disabled { opacity: .35; cursor: not-allowed; transform: none; }
+.btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border2); }
+.btn-outline:hover { background: var(--surface2); }
+.btn-green { background: var(--green); color: white; }
+.btn-green:hover { opacity: .85; }
+.btn-row { display: flex; gap: 10px; margin-top: 20px; }
+/* ── ALERT ── */
+.alert {
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  display: flex; align-items: flex-start; gap: 10px;
+  margin-bottom: 16px;
+}
+.alert-info { background: var(--blue-bg); color: var(--blue); border-left: 3px solid var(--blue); }
+.alert-warn { background: var(--amber-bg); color: var(--amber); border-left: 3px solid var(--amber); }
+.alert-success { background: var(--green-bg); color: var(--green); border-left: 3px solid var(--green); }
+.alert-error { background: var(--red-bg); color: var(--red); border-left: 3px solid var(--red); }
+/* ── STATS ── */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.stat-card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  text-align: center;
+}
+.stat-num { font-size: 28px; font-weight: 700; font-family: 'DM Mono', monospace; line-height: 1.1; }
+.stat-lbl { font-size: 11px; color: var(--text3); margin-top: 4px; }
+/* ── SCHEDULE TABLE ── */
+.sch-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.sch-table th {
+  text-align: left;
+  padding: 10px 12px;
+  background: var(--surface2);
+  color: var(--text2);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--border);
+}
+.sch-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+.sch-table tr:last-child td { border-bottom: none; }
+.sch-table tr:hover td { background: var(--surface2); }
+.tag {
+  display: inline-block;
+  font-size: 11px; font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+.tag-taipei { background: var(--blue-bg); color: var(--blue); }
+.tag-yilan  { background: var(--green-bg); color: var(--green); }
+.tag-keelung{ background: var(--amber-bg); color: var(--amber); }
+.staff-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.chip {
+  font-size: 11px;
+  background: var(--surface2);
+  color: var(--text2);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+/* ── LOAD BAR ── */
+.load-bar { height: 3px; background: var(--border); border-radius: 2px; margin: 12px 0; overflow: hidden; }
+.load-fill { height: 100%; background: var(--text); border-radius: 2px; width: 0; transition: width .35s ease; }
+/* ── WORKLOAD ── */
+.workload-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.workload-row:last-child { border-bottom: none; }
+.wl-name { width: 70px; font-weight: 500; }
+.wl-title { width: 80px; font-size: 11px; color: var(--text3); }
+.wl-bar-wrap { flex: 1; height: 8px; background: var(--surface2); border-radius: 4px; overflow: hidden; }
+.wl-bar { height: 100%; background: var(--text); border-radius: 4px; }
+.wl-count { width: 40px; text-align: right; font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text2); }
+/* ── SCROLLTABLE ── */
+.table-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); }
+/* ── PROGRESS STATE ── */
+.processing { display: none; text-align: center; padding: 40px; color: var(--text2); }
+.processing.active { display: block; }
+.spin {
+  width: 32px; height: 32px;
+  border: 2px solid var(--border);
+  border-top-color: var(--text);
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+  margin: 0 auto 12px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+/* ── FOOTER ── */
+.footer { text-align: center; font-size: 11px; color: var(--text3); padding: 20px; margin-top: 40px; }
+/* ── COURSE BTN ── */
+.course-btn {
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border2);
+  background: var(--surface);
+  color: var(--text2);
+  cursor: pointer;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.course-btn:hover { background: var(--surface2); color: var(--text); }
+.course-btn.selected { background: var(--text); color: white; border-color: var(--text); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-logo">
+    效期查核排程工具
+    <span id="header-course" style="display:none;opacity:1;background:rgba(255,255,255,.18);padding:2px 10px;border-radius:999px;font-size:11px;font-weight:500;letter-spacing:.04em"></span>
+  </div>
+  <div class="header-tag">v1.0</div>
+</div>
+
+<div class="app">
+
+  <!-- STEP NAV -->
+  <nav class="step-nav">
+    <button class="step-btn active" id="nav0" onclick="goStep(0)">
+      <span class="num">1</span> 上傳資料
+    </button>
+    <button class="step-btn" id="nav1" onclick="goStep(1)">
+      <span class="num">2</span> 查核規則
+    </button>
+    <button class="step-btn" id="nav2" onclick="goStep(2)">
+      <span class="num">3</span> 產生排程
+    </button>
+    <button class="step-btn" id="nav3" onclick="goStep(3)">
+      <span class="num">4</span> 匯出報表
+    </button>
+  </nav>
+
+  <!-- ═══ PANEL 0：上傳 ═══ -->
+  <div class="panel active" id="panel0">
+
+    <!-- 課別選擇 -->
+    <p class="sec-heading">選擇課別</p>
+    <div class="card" style="margin-bottom:20px;padding:16px 20px">
+      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+        <div style="font-size:13px;font-weight:500;color:var(--text2);white-space:nowrap">所屬課別</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap" id="course-btns">
+          <button class="course-btn" onclick="selectCourse('北一課')">北一課</button>
+          <button class="course-btn" onclick="selectCourse('北二課')">北二課</button>
+          <button class="course-btn" onclick="selectCourse('北三課')">北三課</button>
+          <button class="course-btn" onclick="selectCourse('北四課')">北四課</button>
+          <button class="course-btn" onclick="selectCourse('桃竹課')">桃竹課</button>
+          <button class="course-btn" onclick="selectCourse('台中課')">台中課</button>
+          <button class="course-btn" onclick="selectCourse('嘉南課')">嘉南課</button>
+          <button class="course-btn" onclick="selectCourse('高屏課')">高屏課</button>
+        </div>
+        <div style="margin-left:auto;font-size:13px;color:var(--text3)" id="course-hint">請先選擇課別</div>
+      </div>
+    </div>
+
+    <p class="sec-heading">上傳三份來源資料</p>
+
+    <div class="upload-grid" id="upload-grid" style="opacity:.4;pointer-events:none">
+      <div class="upload-zone" id="zone-a">
+        <input type="file" accept=".xlsx,.xls" onchange="handleFile(event,'a')">
+        <div class="uz-icon">📋</div>
+        <div class="uz-title">資料A</div>
+        <div class="uz-sub" id="sub-a">效期申請名單<br>.xlsx</div>
+        <div class="uz-status" id="status-a">✓ 已載入</div>
+      </div>
+      <div class="upload-zone" id="zone-b">
+        <input type="file" accept=".xlsx,.xls" onchange="handleFile(event,'b')">
+        <div class="uz-icon">👥</div>
+        <div class="uz-title">資料B</div>
+        <div class="uz-sub" id="sub-b">人員通訊錄<br>.xlsx</div>
+        <div class="uz-status" id="status-b">✓ 已載入</div>
+      </div>
+      <div class="upload-zone" id="zone-c">
+        <input type="file" accept=".xlsx,.xls" onchange="handleFile(event,'c')">
+        <div class="uz-icon">📅</div>
+        <div class="uz-title">資料C</div>
+        <div class="uz-sub" id="sub-c">排休預定<br>.xlsx</div>
+        <div class="uz-status" id="status-c">✓ 已載入</div>
+      </div>
+    </div>
+
+    <div class="alert alert-info" id="upload-hint">
+      <span>ℹ</span>
+      <span id="upload-hint-text">請先選擇課別，再上傳三份 Excel 檔案。</span>
+    </div>
+
+    <div id="parse-errors"></div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" id="btn-to-rules" disabled onclick="goStep(1)">
+        下一步：設定查核規則 →
+      </button>
+    </div>
+  </div>
+
+  <!-- ═══ PANEL 1：規則 ═══ -->
+  <div class="panel" id="panel1">
+    <p class="sec-heading">查核規則設定</p>
+
+    <div class="card">
+      <div class="card-title">📆 基本設定</div>
+      <div class="rule-grid" style="grid-template-columns:1fr 1fr">
+        <div class="rule-item">
+          <label>排程目標年（西元）</label>
+          <select id="cfg-year" onchange="updateMonthLabel()">
+            <option value="2026" selected>2026年</option>
+            <option value="2027">2027年</option>
+            <option value="2028">2028年</option>
+            <option value="2029">2029年</option>
+            <option value="2030">2030年</option>
+          </select>
+        </div>
+        <div class="rule-item">
+          <label>排程目標月份</label>
+          <select id="cfg-monthnum" onchange="updateMonthLabel()">
+            <option value="1">1 月</option>
+            <option value="2">2 月</option>
+            <option value="3">3 月</option>
+            <option value="4">4 月</option>
+            <option value="5" selected>5 月</option>
+            <option value="6">6 月</option>
+            <option value="7">7 月</option>
+            <option value="8">8 月</option>
+            <option value="9">9 月</option>
+            <option value="10">10 月</option>
+            <option value="11">11 月</option>
+            <option value="12">12 月</option>
+          </select>
+        </div>
+      </div>
+      <input type="hidden" id="cfg-month" value="115年 5月" />
+      <input type="hidden" id="cfg-start" value="2026-05-01" />
+      <input type="hidden" id="cfg-end" value="2026-05-31" />
+      <input type="hidden" id="cfg-max" value="2" />
+      <input type="hidden" id="cfg-cluster" value="yes" />
+      <input type="hidden" id="cfg-sort" value="desc" />
+      <input type="hidden" id="cfg-strict" value="true" />
+      <input type="hidden" id="cfg-balance" value="true" />
+      <input type="hidden" id="cfg-local" value="true" />
+    </div>
+
+    <div class="card">
+      <div class="card-title">📄 輸出工作表</div>
+      <div class="toggle-row">
+        <span>工作表 1：月度效期排程表（主表）</span>
+        <label class="toggle-wrap"><input type="checkbox" checked disabled><span class="toggle-track"></span></label>
+      </div>
+      <div class="toggle-row">
+        <span>工作表 2：人員出勤彙整（橫式甘特）</span>
+        <label class="toggle-wrap"><input type="checkbox" id="cfg-sheet2" checked><span class="toggle-track"></span></label>
+      </div>
+      <div class="toggle-row">
+        <span>工作表 3：區域店家彙整（統計摘要）</span>
+        <label class="toggle-wrap"><input type="checkbox" id="cfg-sheet3" checked><span class="toggle-track"></span></label>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-outline" onclick="goStep(0)">← 返回</button>
+      <button class="btn btn-primary" onclick="runSchedule()">產生排程 →</button>
+    </div>
+  </div>
+
+  <!-- ═══ PANEL 2：產生中 / 預覽 ═══ -->
+  <div class="panel" id="panel2">
+
+    <div class="processing" id="processing">
+      <div class="spin"></div>
+      <div style="font-size:13px;font-weight:500">排程計算中…</div>
+      <div class="load-bar" style="max-width:240px;margin:16px auto 0"><div class="load-fill" id="load-fill"></div></div>
+      <div style="font-size:11px;color:var(--text3);margin-top:8px" id="load-msg">初始化資料…</div>
+    </div>
+
+    <div id="preview-content" style="display:none">
+      <p class="sec-heading">盤點內部作業系統</p>
+
+      <div class="stat-grid">
+        <div class="stat-card"><div class="stat-num" id="s-stores">—</div><div class="stat-lbl">查核門市</div></div>
+        <div class="stat-card"><div class="stat-num" id="s-staff">—</div><div class="stat-lbl">出勤人員</div></div>
+        <div class="stat-card"><div class="stat-num" id="s-days">—</div><div class="stat-lbl">出勤天數</div></div>
+        <div class="stat-card"><div class="stat-num" id="s-total">—</div><div class="stat-lbl">總人次</div></div>
+      </div>
+
+      <!-- 排程主表 -->
+      <div class="card" style="padding:0">
+        <div style="padding:16px 20px 0;display:flex;align-items:center;justify-content:space-between">
+          <div class="card-title" style="margin:0">排程明細（依日期）</div>
+          <div style="font-size:11px;color:var(--text3)" id="month-label"></div>
+        </div>
+        <div class="table-wrap" style="border:none;border-radius:0 0 var(--radius) var(--radius);margin-top:12px">
+          <table class="sch-table">
+            <thead>
+              <tr>
+                <th>日期</th>
+                <th>區域</th>
+                <th>店名</th>
+                <th>主責課</th>
+                <th>查核人員</th>
+                <th>日翊</th>
+                <th>派遣</th>
+                <th>庫存值</th>
+              </tr>
+            </thead>
+            <tbody id="sch-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 人員負載 -->
+      <div class="card">
+        <div class="card-title">人員工作負載分布</div>
+        <div id="workload-list"></div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-outline" onclick="goStep(1)">← 調整規則</button>
+        <button class="btn btn-green" onclick="goStep(3)">匯出報表 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ PANEL 3：匯出 ═══ -->
+  <div class="panel" id="panel3">
+    <p class="sec-heading">匯出 Excel 報表</p>
+
+    <div class="alert alert-success">
+      <span>✓</span>
+      <span>排程計算完成。請確認輸出選項後按下「下載 Excel」。</span>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📥 輸出確認</div>
+      <div class="toggle-row">
+        <span>月度效期排程表（含色彩標示）</span>
+        <label class="toggle-wrap"><input type="checkbox" id="exp-main" checked><span class="toggle-track"></span></label>
+      </div>
+      <div class="toggle-row" id="row-sheet2">
+        <span>人員出勤彙整表</span>
+        <label class="toggle-wrap"><input type="checkbox" id="exp-s2" checked><span class="toggle-track"></span></label>
+      </div>
+      <div class="toggle-row" id="row-sheet3">
+        <span>區域店家彙整表</span>
+        <label class="toggle-wrap"><input type="checkbox" id="exp-s3" checked><span class="toggle-track"></span></label>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title" style="margin-bottom:10px">📊 本次排程摘要</div>
+      <div id="export-summary" style="font-size:13px;color:var(--text2);line-height:2"></div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-outline" onclick="goStep(2)">← 返回預覽</button>
+      <button class="btn btn-green" onclick="exportExcel()" id="btn-download">
+        ⬇ 下載 Excel 排程表
+      </button>
+    </div>
+  </div>
+
+</div><!-- /app -->
+
+<div class="footer">效期查核排程工具 — 盤點內部作業系統 v1.0</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+var DATA = { a: null, b: null, c: null };
+var SCHEDULE = [];
+var WORKLOAD = {};
+
+// ═══════════════════════════════════════════════
+// STEP NAV
+// ═══════════════════════════════════════════════
+function goStep(n) {
+  [0,1,2,3].forEach(function(i) {
+    document.getElementById('panel'+i).classList.toggle('active', i===n);
+    var btn = document.getElementById('nav'+i);
+    btn.classList.toggle('active', i===n);
+  });
+}
+
+// ═══════════════════════════════════════════════
+// FILE UPLOAD & PARSE
+// ═══════════════════════════════════════════════
+function handleFile(evt, key) {
+  var file = evt.target.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var wb = XLSX.read(e.target.result, {type:'array', cellDates:true});
+      var ws = wb.Sheets[wb.SheetNames[0]];
+      var rows = XLSX.utils.sheet_to_json(ws, {defval:''});
+      DATA[key] = rows;
+      document.getElementById('zone-'+key).classList.add('done');
+      document.getElementById('status-'+key).textContent = '✓ ' + file.name;
+      checkAllUploaded();
+    } catch(err) {
+      document.getElementById('zone-'+key).classList.add('error');
+      showError('檔案解析失敗：' + file.name + '（' + err.message + '）');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function checkAllUploaded() {
+  var ok = DATA.a && DATA.b && DATA.c && SELECTED_COURSE;
+  document.getElementById('btn-to-rules').disabled = !ok;
+  if (DATA.a && DATA.b && DATA.c && !SELECTED_COURSE) {
+    document.getElementById('upload-hint').className = 'alert alert-warn';
+    document.getElementById('upload-hint').innerHTML = '<span>⚠</span><span>三份檔案已載入，請先選擇課別後再繼續。</span>';
+    return;
+  }
+  if (ok) {
+    document.getElementById('upload-hint').className = 'alert alert-success';
+    document.getElementById('upload-hint').innerHTML = '<span>✓</span><span>課別「' + SELECTED_COURSE + '」已選擇，三份檔案均已載入，可繼續設定查核規則。</span>';
+    [0,1,2].forEach(function(i) {
+      document.getElementById('nav'+i).classList.add('done');
+    });
+  }
+}
+
+function showError(msg) {
+  var d = document.getElementById('parse-errors');
+  d.innerHTML = '<div class="alert alert-error"><span>✗</span><span>'+msg+'</span></div>';
+}
+
+// ═══════════════════════════════════════════════
+// SCHEDULE ENGINE
+// ═══════════════════════════════════════════════
+function runSchedule() {
+  goStep(2);
+  document.getElementById('processing').classList.add('active');
+  document.getElementById('preview-content').style.display = 'none';
+
+  var msgs = ['讀取人員通訊錄…','解析門市名單…','套用區域限制規則…','計算工作日矩陣…','最優化人力分配…','彙整排程結果…'];
+  var idx = 0;
+  var fill = 0;
+  var lf = document.getElementById('load-fill');
+  var lm = document.getElementById('load-msg');
+
+  var t = setInterval(function() {
+    fill = Math.min(fill + Math.floor(Math.random()*18+10), 95);
+    lf.style.width = fill + '%';
+    if (idx < msgs.length) { lm.textContent = msgs[idx++]; }
+  }, 280);
+
+  setTimeout(function() {
+    clearInterval(t);
+    lf.style.width = '100%';
+    computeSchedule();
+    setTimeout(function() {
+      document.getElementById('processing').classList.remove('active');
+      document.getElementById('preview-content').style.display = 'block';
+    }, 400);
+  }, 2000);
+}
+
+function computeSchedule() {
+
+  // ════════════════════════════════════════════
+  // A. 解析人員資料（資料B）
+  // ════════════════════════════════════════════
+  var staffRaw = DATA.b || [];
+  var STAFF = staffRaw.map(function(r) {
+    var titleRaw = String(r['職稱'] || '').trim();
+    // 職級分類
+    // 專員級：助理高專、資深專員、專員、事務專員
+    // 助理級：中階助理、初階助理、課長
+    var isSenior = ['助理高專','資深專員','專員','事務專員'].some(function(t){ return titleRaw.indexOf(t) >= 0; });
+    var isAssist = ['中階助理','初階助理','課長'].some(function(t){ return titleRaw.indexOf(t) >= 0; });
+    // 不執行區域（支援「、」或「,」分隔）
+    var restrictedRaw = String(r['不執行的區域'] || r['不執行區域'] || '');
+    var restricted = restrictedRaw.split(/[、,，]/).map(function(s){ return s.trim(); }).filter(Boolean);
+    return {
+      name:       String(r['姓名'] || '').trim(),
+      code:       String(r['班表代號'] || r['姓名'] || '').trim().charAt(0), // 單字班表代號
+      title:      titleRaw,
+      isSenior:   isSenior,
+      isAssist:   isAssist,
+      restricted: restricted,
+      city:       String(r['居住地'] || '').trim()
+    };
+  }).filter(function(s){ return s.name; });
+
+  // ════════════════════════════════════════════
+  // B. 解析門市資料（資料A）
+  // ════════════════════════════════════════════
+  var storesRaw = DATA.a || [];
+
+  // 國定假日（可擴充）
+  var HOLIDAYS = {
+    '2026-01-01':1,'2026-05-01':1,'2026-01-28':1,'2026-01-29':1,'2026-01-30':1,
+    '2026-02-02':1,'2026-02-27':1,'2026-02-28':1,'2026-04-03':1,
+    '2026-04-04':1,'2026-04-05':1,'2026-06-19':1,'2026-09-03':1,
+    '2026-10-01':1,'2026-10-02':1,'2026-10-10':1
+  };
+
+  var STORES = storesRaw.map(function(r) {
+    // 店號補0至6碼
+    var rawId = String(r['店號'] || '').trim().replace(/^0+/,'');
+    var storeId = rawId.padStart(6,'0');
+
+    // 行政區（從地址或獨立欄位取得）
+    var addr    = String(r['地址'] || '').trim();
+    var district= String(r['行政區'] || '').trim();
+    if (!district && addr) {
+      // 嘗試從地址擷取（如「台北市中山區」→「中山區」）
+      var m = addr.match(/[縣市].+?([^縣市]+[區鄉鎮市])/);
+      if (m) district = m[1];
+    }
+
+    // 大區域（縣市）
+    var region = '台北市';
+    if (addr.indexOf('宜蘭') >= 0 || district.indexOf('宜蘭') >= 0) region = '宜蘭縣';
+    else if (addr.indexOf('基隆') >= 0 || district.indexOf('基隆') >= 0) region = '基隆市';
+    else if (addr.indexOf('新北') >= 0) region = '新北市';
+    else if (addr.indexOf('桃園') >= 0) region = '桃園市';
+
+    // 主責課與合查邏輯
+    var 主責Raw = String(r['盤點主責課'] || '').trim();
+    var total   = parseInt(r['日翊人力']) || 2;
+    var 北一合查 = (主責Raw.indexOf('北一') >= 0) &&
+                   (主責Raw.indexOf('+') >= 0 || 主責Raw.indexOf('、') >= 0 || 主責Raw.indexOf(',') >= 0);
+
+    // 計算本課應派人數：
+    // 格式如「北二2+北一1+北四1」→ 找本課（SELECTED_COURSE）對應數字
+    // 若找不到本課名稱，fallback：total - 北一人數
+    var nikiNeed = (function() {
+      if (!主責Raw || 主責Raw.indexOf('+') < 0) return total; // 無合查，照填
+      // 嘗試從主責課欄位找本課人數
+      var course = (typeof SELECTED_COURSE !== 'undefined' && SELECTED_COURSE) ? SELECTED_COURSE : '';
+      // 正規化課名對應縮寫（北三課→北三, 桃竹課→桃竹）
+      var shortMap = {'北一課':'北一','北二課':'北二','北三課':'北三','北四課':'北四',
+                      '桃竹課':'桃竹','台中課':'台中','嘉南課':'嘉南','高屏課':'高屏'};
+      var short = shortMap[course] || course.replace('課','');
+      // 從主責課字串找「縮寫+數字」（如「北三1」）
+      var pat = new RegExp(short.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '(\\d+)');
+      var m3 = 主責Raw.match(pat);
+      if (m3) return parseInt(m3[1]);
+      // fallback：total 扣掉北一人數
+      var m4 = 主責Raw.match(/北一(\d+)/);
+      var 北一n = m4 ? parseInt(m4[1]) : 1;
+      return Math.max(1, total - 北一n);
+    })();
+
+    // 週六備註
+    var 週六備註 = String(r['備註'] || '').indexOf('星期六') >= 0;
+
+    // 查核日期欄（若資料A有指定查核日期）
+    var 指定查核日 = r['查核日期'] ? new Date(r['查核日期']) : null;
+
+    return {
+      seq:        String(r['序'] || '-'),
+      storeId:    storeId,
+      name:       String(r['店名'] || '').trim(),
+      addr:       addr,
+      district:   district,
+      region:     region,
+      主責課:     主責Raw,
+      北一合查:   北一合查,
+      nikiNeed:   nikiNeed,
+      派遣:       parseInt(r['派遣人力']) || 0,
+      inventory:  parseInt(String(r['最近盤點庫存值'] || '0').replace(/,/g,'')) || 0,
+      cycle:      String(r['最近盤點日'] || ''),
+      time:       String(r['查核時段'] || '09-18'),
+      週六備註:   週六備註,
+      指定查核日: 指定查核日
+    };
+  }).filter(function(s){ return s.name; });
+
+  // ════════════════════════════════════════════
+  // C. 解析排休（資料C）
+  // ════════════════════════════════════════════
+  var leaveRaw = DATA.c || [];
+  var LEAVES = {};
+  leaveRaw.forEach(function(r) {
+    var name = String(r['姓名']||'').trim();
+    var dt   = r['休假日期'];
+    if (!name || !dt) return;
+    var d = dt instanceof Date ? dt : new Date(dt);
+    var key = d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
+    if (!LEAVES[name]) LEAVES[name] = {};
+    LEAVES[name][key] = true;
+  });
+
+  // ════════════════════════════════════════════
+  // D. 工作日產生（排除週日、國定假日；週六僅限週六備註店）
+  // ════════════════════════════════════════════
+  var startStr = document.getElementById('cfg-start').value || '2026-05-01';
+  var endStr   = document.getElementById('cfg-end').value   || '2026-05-31';
+  var startD = new Date(startStr), endD = new Date(endStr);
+  var allDays = [];
+  var cur = new Date(startD);
+  while (cur <= endD) {
+    var dow = cur.getDay();   // 0=日,6=六
+    var dk  = cur.toISOString().slice(0,10);
+    if (dow !== 0 && !HOLIDAYS[dk]) {  // 非週日、非國定假日
+      allDays.push({ date: new Date(cur), isSat: dow === 6 });
+    }
+    cur.setDate(cur.getDate()+1);
+  }
+  // 平日（週一～五）
+  var workdays = allDays.filter(function(d){ return !d.isSat; }).map(function(d){ return d.date; });
+  // 週六可用日
+  var satdays  = allDays.filter(function(d){ return d.isSat; }).map(function(d){ return d.date; });
+
+  // ════════════════════════════════════════════
+  // E. 輔助函式
+  // ════════════════════════════════════════════
+  function dateKey(d) { return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
+
+  // 嚴格：不執行區域完全排除
+  function canDo(person, store) {
+    var region   = store.region;
+    var district = store.district;
+    return !person.restricted.some(function(r) {
+      return r && (region.indexOf(r) >= 0 || r.indexOf(region) >= 0 ||
+                   district.indexOf(r) >= 0 || r.indexOf(district) >= 0);
+    });
+  }
+
+  function onLeave(person, date) {
+    var key = dateKey(date);
+    return !!(LEAVES[person.name] && LEAVES[person.name][key]);
+  }
+
+  // 地理親近度：0=完全符合行政區, 1=同縣市, 2=其他
+  function proximity(person, store) {
+    if (store.district && person.city.indexOf(store.district) >= 0) return 0;
+    if (store.region   && person.city.indexOf(store.region)   >= 0) return 1;
+    return 2;
+  }
+
+  // ════════════════════════════════════════════
+  // F. 人員負載追蹤
+  // ════════════════════════════════════════════
+  var wl = {};
+  STAFF.forEach(function(s){ wl[s.name] = 0; });
+  var personDateMap = {}; // name_dateKey → storeName（同天僅排一店）
+  var lastDate = {};      // name → 上次出勤 dateKey（避免連排）
+  var schedule = [];
+
+  function assignStore(store, date, staffList) {
+    var dk = dateKey(date);
+    schedule.push({
+      date:  new Date(date),
+      store: store,
+      staff: staffList.map(function(s){ return s.name; }),
+      codes: staffList.map(function(s){ return s.code; })
+    });
+    staffList.forEach(function(s) {
+      wl[s.name] = (wl[s.name]||0) + 1;
+      personDateMap[s.name+'_'+dk] = store.name;
+      lastDate[s.name] = dk;
+    });
+  }
+
+  // 取得某店、某日可用人員
+  function getAvail(store, date) {
+    var dk = dateKey(date);
+    return STAFF.filter(function(s) {
+      if (!canDo(s, store))                        return false; // 不執行區域
+      if (onLeave(s, date))                        return false; // 休假
+      if (personDateMap[s.name+'_'+dk])            return false; // 同天已出勤
+      return true;
+    });
+  }
+
+  // ════════════════════════════════════════════
+  // G. 選人邏輯（含職級規則）
+  // 需 1 人：限專員級，排除課長/初階/中階
+  // 需 2+ 人：至少 1 名專員級，其餘不限
+  // ════════════════════════════════════════════
+  function pickStaff(avail, need, store) {
+    if (!avail.length) return [];
+
+    // 排序：地理親近 → 負載平衡 → 避免連排
+    function score(p) {
+      var prox  = proximity(p, store);          // 0/1/2
+      var load  = wl[p.name] || 0;
+      var consec= (lastDate[p.name] === dateKey(store._curDate||new Date())) ? 1 : 0;
+      return prox * 1000 + load * 10 + consec;
+    }
+    var pool = avail.slice().sort(function(a,b){ return score(a)-score(b); });
+
+    if (need === 1) {
+      // 需 1 人：僅限專員級（助理高專/資深專員/專員/事務專員）
+      // 嚴格排除課長/初階助理/中階助理
+      var senior1 = pool.filter(function(p){ return p.isSenior && !p.isAssist; });
+      return senior1.length ? [senior1[0]] : []; // 無合格專員 → 本日跳過，外層找下一天
+    }
+
+    // need >= 2：至少 1 名專員級（且非助理）+ 其餘不限（可專員可助理可課長）
+    var seniors2 = pool.filter(function(p){ return p.isSenior && !p.isAssist; });
+    if (!seniors2.length) return []; // 無專員 → 本日跳過
+
+    var picked = [seniors2[0]];
+    // 剩餘名額：從剩餘 pool（已去掉選中的人）補齊，不限職級
+    var remain = pool.filter(function(p){ return p.name !== picked[0].name; });
+    for (var i = 0; i < need-1 && remain.length > 0; i++) {
+      picked.push(remain.shift());
+    }
+    return picked;
+  }
+
+  // ════════════════════════════════════════════
+  // H. 主排程迴圈（依庫存值大到小）
+  // ════════════════════════════════════════════
+  var sorted = STORES.slice().sort(function(a,b){ return b.inventory - a.inventory; });
+
+  sorted.forEach(function(store) {
+    // 決定可用日期池
+    var dayPool = store.週六備註 ? workdays.concat(satdays) : workdays;
+    dayPool = dayPool.slice().sort(function(a,b){ return a-b; });
+
+    // 若資料A指定查核日，優先使用
+    if (store.指定查核日) {
+      var sd = store.指定查核日;
+      store._curDate = sd;
+      var avail = getAvail(store, sd);
+      var picked = pickStaff(avail, store.nikiNeed, store);
+      assignStore(store, sd, picked);
+      return;
+    }
+
+    // 自動選日：找最早可安排且人員足夠的工作日
+    for (var di = 0; di < dayPool.length; di++) {
+      var d = dayPool[di];
+      store._curDate = d;
+      var avail = getAvail(store, d);
+      var picked = pickStaff(avail, store.nikiNeed, store);
+      if (picked.length >= store.nikiNeed || (picked.length > 0 && avail.length === picked.length)) {
+        assignStore(store, d, picked);
+        break;
+      }
+    }
+  });
+
+  // ── 排序結果 ──
+  schedule.sort(function(a,b){ return a.date - b.date; });
+
+  SCHEDULE = schedule;
+  WORKLOAD = wl;
+
+  // ── 渲染預覽 ──
+  renderPreview(schedule, wl, STAFF);
+}
+
+function renderPreview(schedule, wl, STAFF) {
+  // 統計
+  var uniqueStaff = {};
+  var totalMandays = 0;
+  schedule.forEach(function(r) {
+    r.staff.forEach(function(n){ uniqueStaff[n]=true; });
+    totalMandays += r.staff.length;
+  });
+  var uniqueDates = {};
+  schedule.forEach(function(r){ uniqueDates[r.date.toISOString().slice(0,10)]=true; });
+
+  document.getElementById('s-stores').textContent = schedule.length;
+  document.getElementById('s-staff').textContent = Object.keys(uniqueStaff).length;
+  document.getElementById('s-days').textContent = Object.keys(uniqueDates).length;
+  document.getElementById('s-total').textContent = totalMandays;
+  document.getElementById('month-label').textContent = document.getElementById('cfg-month').value;
+
+  // 主表
+  var weekdays = ['日','一','二','三','四','五','六'];
+  var tagMap = {'台北市':'tag-taipei','宜蘭縣':'tag-yilan','基隆市':'tag-keelung'};
+  var tbody = document.getElementById('sch-tbody');
+  tbody.innerHTML = '';
+  schedule.forEach(function(r) {
+    var d = r.date;
+    var dateStr = (d.getMonth()+1) + '/' + d.getDate() + '（週' + weekdays[d.getDay()] + '）';
+    var tagClass = tagMap[r.store.region] || '';
+    var chips = r.staff.map(function(n){ return '<span class="chip">'+n+'</span>'; }).join('');
+    var inv = r.store.inventory ? r.store.inventory.toLocaleString() : '—';
+    var 主責 = r.store.主責課 || '—';
+    var 是合查 = r.store.北一合查;
+    var 主責Tag;
+    if (是合查) {
+      主責Tag = '<span style="font-size:11px;background:#FBF2DC;color:#8A5A00;padding:2px 7px;border-radius:999px" title="北一課合查：北一出1人，本課出'+(r.store.nikiNeed)+'人">'+主責+' <span style="opacity:.6">合查</span></span>';
+    } else {
+      主責Tag = '<span style="font-size:12px;color:var(--text3)">'+主責+'</span>';
+    }
+    tbody.innerHTML += '<tr>' +
+      '<td style="white-space:nowrap;font-family:\'DM Mono\',monospace;font-size:12px">' + dateStr + '</td>' +
+      '<td><span class="tag ' + tagClass + '">' + r.store.region + '</span></td>' +
+      '<td style="font-weight:500">' + r.store.name + '</td>' +
+      '<td>' + 主責Tag + '</td>' +
+      '<td><div class="staff-chips">' + chips + '</div></td>' +
+      '<td style="text-align:center">' + r.staff.length + '</td>' +
+      '<td style="text-align:center">' + r.store.派遣 + '</td>' +
+      '<td style="text-align:right;font-family:\'DM Mono\',monospace;font-size:12px">' + inv + '</td>' +
+      '</tr>';
+  });
+
+  // 負載
+  var maxWl = Math.max.apply(null, Object.values(wl).concat([1]));
+  var wlDiv = document.getElementById('workload-list');
+  wlDiv.innerHTML = '';
+  STAFF.sort(function(a,b){ return (wl[b.name]||0)-(wl[a.name]||0); }).forEach(function(s) {
+    var cnt = wl[s.name] || 0;
+    var pct = Math.round(cnt/maxWl*100);
+    wlDiv.innerHTML += '<div class="workload-row">' +
+      '<div class="wl-name">' + s.name + '</div>' +
+      '<div class="wl-title">' + s.title + '</div>' +
+      '<div class="wl-bar-wrap"><div class="wl-bar" style="width:'+pct+'%"></div></div>' +
+      '<div class="wl-count">' + cnt + ' 家</div>' +
+      '</div>';
+  });
+
+  // 匯出摘要
+  var regionCount = {};
+  schedule.forEach(function(r){ regionCount[r.store.region] = (regionCount[r.store.region]||0)+1; });
+  var summaryHtml = '';
+  Object.keys(regionCount).forEach(function(reg){
+    summaryHtml += '<div>・' + reg + '：' + regionCount[reg] + ' 家門市</div>';
+  });
+  summaryHtml += '<div>・出勤天數：' + Object.keys(uniqueDates).length + ' 天（工作日）</div>';
+  summaryHtml += '<div>・總計人次：' + totalMandays + ' 人次</div>';
+  document.getElementById('export-summary').innerHTML = summaryHtml;
+}
+
+// ═══════════════════════════════════════════════
+// EXPORT EXCEL
+// ═══════════════════════════════════════════════
+function exportExcel() {
+  var wb = XLSX.utils.book_new();
+  var monthLabel = document.getElementById('cfg-month').value;
+  var weekdays = ['日','一','二','三','四','五','六'];
+
+  // ── Sheet 1 ──
+  var rows1 = [['序','店號','店名','區域','查核日期','星期','查核時段','查核人員','日翊人數','派遣人力','庫存值','盤點週期']];
+  SCHEDULE.forEach(function(r) {
+    var d = r.date;
+    rows1.push([
+      r.store.seq,
+      r.store.storeId,
+      r.store.name,
+      r.store.region,
+      (d.getMonth()+1)+'/'+d.getDate(),
+      '週'+weekdays[d.getDay()],
+      r.store.time,
+      r.staff.join('、'),
+      r.staff.length,
+      r.store.派遣,
+      r.store.inventory,
+      r.store.cycle
+    ]);
+  });
+  var ws1 = XLSX.utils.aoa_to_sheet(rows1);
+  ws1['!cols'] = [5,10,14,8,8,6,8,22,8,8,12,8].map(function(w){return{wch:w};});
+  XLSX.utils.book_append_sheet(wb, ws1, monthLabel+'效期排程表');
+
+  // ── Sheet 2（出勤彙整）──
+  if (document.getElementById('exp-s2').checked) {
+    var dates = [];
+    var dateSet = {};
+    SCHEDULE.forEach(function(r){
+      var k = r.date.toISOString().slice(0,10);
+      if (!dateSet[k]) { dateSet[k]=r.date; dates.push(r.date); }
+    });
+    dates.sort(function(a,b){return a-b;});
+
+    var staffNames = (DATA.b||[]).filter(function(r){
+      return r['效期查核'] && String(r['效期查核']).trim().toUpperCase()==='V';
+    }).map(function(r){return String(r['姓名']||'').trim();});
+
+    var hdr2 = ['姓名','職稱','場數'].concat(dates.map(function(d){
+      return (d.getMonth()+1)+'/'+d.getDate()+'（週'+weekdays[d.getDay()]+'）';
+    }));
+    var rows2 = [hdr2];
+    staffNames.forEach(function(name) {
+      var titleRow = (DATA.b||[]).find(function(r){return String(r['姓名']||'').trim()===name;});
+      var title = titleRow ? String(titleRow['職稱']||'') : '';
+      var cnt = 0;
+      var cells = dates.map(function(d) {
+        var found = SCHEDULE.filter(function(r){
+          return r.date.toISOString().slice(0,10)===d.toISOString().slice(0,10) && r.staff.includes(name);
+        });
+        if (found.length) { cnt += found.length; return found.map(function(f){return f.store.name;}).join('、'); }
+        return '';
+      });
+      rows2.push([name, title, cnt].concat(cells));
+    });
+    var ws2 = XLSX.utils.aoa_to_sheet(rows2);
+    XLSX.utils.book_append_sheet(wb, ws2, '人員出勤彙整');
+  }
+
+  // ── Sheet 3（區域彙整）──
+  if (document.getElementById('exp-s3').checked) {
+    var regionData = {};
+    SCHEDULE.forEach(function(r) {
+      var reg = r.store.region;
+      if (!regionData[reg]) regionData[reg] = {stores:0, niki:0, 派遣:0, dates:{}};
+      regionData[reg].stores++;
+      regionData[reg].niki += r.staff.length;
+      regionData[reg].派遣 += r.store.派遣;
+      regionData[reg].dates[r.date.toISOString().slice(0,10)] = true;
+    });
+    var rows3 = [['區域','店家數','日翊人次','派遣人次','查核天數']];
+    Object.keys(regionData).forEach(function(reg) {
+      var d = regionData[reg];
+      rows3.push([reg, d.stores, d.niki, d.派遣, Object.keys(d.dates).length]);
+    });
+    var ws3 = XLSX.utils.aoa_to_sheet(rows3);
+    XLSX.utils.book_append_sheet(wb, ws3, '區域彙整');
+  }
+
+  var prefix = window._coursePrefix ? window._coursePrefix + '_' : ''; var filename = prefix + '效期查核排程_' + monthLabel.replace(/\s/g,'') + '.xlsx';
+  XLSX.writeFile(wb, filename);
+}
+
+// ═══════════════════════════════════════════════
+// COURSE SELECTOR
+// ═══════════════════════════════════════════════
+var SELECTED_COURSE = '';
+
+function selectCourse(name) {
+  SELECTED_COURSE = name;
+  // update buttons
+  document.querySelectorAll('.course-btn').forEach(function(b) {
+    b.classList.toggle('selected', b.textContent === name);
+  });
+  // update hint
+  document.getElementById('course-hint').textContent = '已選：' + name;
+  document.getElementById('course-hint').style.color = 'var(--green)';
+  // unlock upload grid
+  var grid = document.getElementById('upload-grid');
+  grid.style.opacity = '1';
+  grid.style.pointerEvents = 'auto';
+  // update sub labels
+  document.getElementById('sub-a').innerHTML = name + ' 效期申請名單<br>.xlsx';
+  document.getElementById('sub-b').innerHTML = name + ' 人員通訊錄<br>.xlsx';
+  document.getElementById('sub-c').innerHTML = name + ' 排休預定<br>.xlsx';
+  // update hint text
+  document.getElementById('upload-hint-text').textContent = '課別已選擇「' + name + '」，請依序上傳三份 Excel 檔案。';
+  // update header
+  document.getElementById('header-course').textContent = name;
+  document.getElementById('header-course').style.display = 'inline';
+  // update export filename prefix
+  window._coursePrefix = name;
+}
+
+// ═══════════════════════════════════════════════
+// MONTH LABEL SYNC
+// ═══════════════════════════════════════════════
+function updateMonthLabel() {
+  var year  = parseInt(document.getElementById('cfg-year').value);
+  var month = parseInt(document.getElementById('cfg-monthnum').value);
+  var rocYear = year - 1911;
+  var mm = String(month).padStart(2,'0');
+  var lastDay = new Date(year, month, 0).getDate();
+  document.getElementById('cfg-month').value = rocYear + '年 ' + month + '月';
+  document.getElementById('cfg-start').value = year + '-' + mm + '-01';
+  document.getElementById('cfg-end').value   = year + '-' + mm + '-' + lastDay;
+}
+// run once on load
+updateMonthLabel();
+</script>
+</body>
+</html>
