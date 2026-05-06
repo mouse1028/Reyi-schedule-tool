@@ -1,0 +1,1311 @@
+<!DOCTYPE html>
+<html lang="zh-TW"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>日翊假勤排班管理系統 2026</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --red:#E24B4A;--red-bg:#FCEBEB;--red-bd:#F7C1C1;
+  --green:#3B6D11;--green-bg:#EAF3DE;--green-bd:#C0DD97;
+  --pink:#D4537E;--pink-bg:#FBEAF0;--pink-bd:#F4C0D1;
+  --blue:#185FA5;--blue-bg:#E6F1FB;--blue-bd:#B5D4F4;
+  --orange:#E65100;--orange-bg:#FFF3E0;--orange-bd:#FFCC80;
+  --purple:#6A1B9A;--purple-bg:#F3E5F5;--purple-bd:#CE93D8;
+  --teal:#00695C;--teal-bg:#E0F2F1;--teal-bd:#80CBC4;
+  --bg:#FFFFFF;--bg2:#F7F6F2;--text:#1A1916;--text2:#6B6860;--bd:#E2E0D8;
+}
+body{font-family:'Microsoft JhengHei','Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);font-size:13px}
+.app{display:flex;flex-direction:column;height:100vh}
+.topbar{display:flex;align-items:center;gap:8px;padding:8px 14px;border-bottom:1px solid var(--bd);background:var(--bg);flex-shrink:0}
+.topbar h1{font-size:14px;font-weight:600}
+.main-tabs{display:flex;border-bottom:1px solid var(--bd);background:var(--bg);flex-shrink:0;overflow-x:auto}
+.main-tab{padding:8px 14px;font-size:12px;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
+.main-tab.active{color:var(--text);border-bottom-color:var(--text);font-weight:600}
+.main-tab:hover:not(.active){color:var(--text)}
+.content{flex:1;overflow:hidden;display:flex;flex-direction:column}
+.panel{display:none;flex:1;overflow-y:auto;padding:12px 14px}
+.panel.active{display:flex;flex-direction:column;gap:10px}
+.ctrl-row{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+select,input[type=text],input[type=date]{height:30px;padding:0 8px;border:1px solid var(--bd);border-radius:6px;font-size:12px;background:var(--bg);color:var(--text);outline:none}
+select:focus,input:focus{border-color:#999}
+.btn{height:30px;padding:0 11px;border-radius:6px;font-size:12px;cursor:pointer;font-weight:500;border:none;white-space:nowrap}
+.btn:hover{opacity:.8}
+.btn-p{background:var(--text);color:var(--bg)}
+.btn-s{background:transparent;border:1px solid var(--bd);color:var(--text)}
+.btn-s:hover{background:var(--bg2)}
+.btn-red{background:var(--red-bg);color:#A32D2D;border:1px solid var(--red-bd)}
+.btn-orange{background:var(--orange-bg);color:var(--orange);border:1px solid var(--orange-bd)}
+.tag{display:inline-block;padding:1px 5px;border-radius:3px;font-size:10px;font-weight:600;line-height:1.5}
+.tag-s{background:var(--red-bg);color:#A32D2D;border:1px solid var(--red-bd)}
+.tag-c{background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)}
+.tag-b{background:var(--pink-bg);color:#993556;border:1px solid var(--pink-bd)}
+.tag-o{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd)}
+.tag-meeting{background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-bd)}
+.tag-dept{background:var(--orange-bg);color:var(--orange);border:1px solid var(--orange-bd)}
+.tag-class{background:var(--teal-bg);color:var(--teal);border:1px solid var(--teal-bd)}
+.tag-warn{background:#FFF9C4;color:#856404;border:1px solid #FFE082}
+.legend{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.leg{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text2)}
+.legbox{width:11px;height:11px;border-radius:2px;flex-shrink:0}
+.cal-outer{overflow:auto;flex:1;border:1px solid var(--bd);border-radius:6px}
+.cal-table{border-collapse:collapse;font-size:11px}
+.cal-table th{padding:3px 2px;text-align:center;background:var(--bg2);color:var(--text2);border:1px solid var(--bd);font-weight:500;font-size:10px;white-space:nowrap;position:sticky;top:0;z-index:2;min-width:30px}
+.cal-table th.sticky-name{position:sticky;left:0;z-index:3;background:var(--bg2);min-width:90px;text-align:left;padding:3px 6px}
+.cal-table td{padding:2px 1px;border:1px solid #EEE;text-align:center;vertical-align:middle;min-width:30px;height:26px}
+.cal-table td.name-cell{position:sticky;left:0;background:var(--bg2);text-align:left;padding:2px 6px;font-weight:500;z-index:1;white-space:nowrap;font-size:11px}
+.cal-table td.day-sun{background:#FFF5F5}
+.cal-table td.day-sat{background:#F5F8FF}
+.cal-table td.day-locked{cursor:not-allowed}
+.cal-table td.day-click{cursor:pointer}
+.cal-table td.day-click:hover{filter:brightness(.95)}
+.day-x{color:#ccc;font-size:12px;font-weight:700}
+.section-card{border:1px solid var(--bd);border-radius:8px;padding:12px;background:var(--bg)}
+.section-title{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px}
+.maint-table{width:100%;border-collapse:collapse;font-size:12px}
+.maint-table th{padding:6px 8px;background:var(--bg2);border:1px solid var(--bd);font-weight:500;color:var(--text2);font-size:11px;text-align:left}
+.maint-table td{padding:5px 8px;border:1px solid var(--bd);vertical-align:middle}
+.maint-table tr:hover td{background:var(--bg2)}
+.stat-pills{display:flex;gap:6px;flex-wrap:wrap;padding:6px 8px}
+.spill{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:100}
+.popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:16px;z-index:101;width:260px;box-shadow:0 8px 32px rgba(0,0,0,.15)}
+.popup h3{font-size:13px;font-weight:600;margin-bottom:10px}
+.popup-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px}
+.popup-btn{padding:8px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;text-align:center;border:none}
+.popup-btn:hover{opacity:.85}
+.export-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
+.export-card{border:1px solid var(--bd);border-radius:8px;padding:10px 12px;background:var(--bg);display:flex;flex-direction:column;gap:6px}
+.export-card-title{font-size:13px;font-weight:600}
+.export-card-sub{font-size:11px;color:var(--text2)}
+.cond-row{display:flex;gap:6px;align-items:center;padding:6px 8px;border:1px solid var(--bd);border-radius:6px;background:var(--bg2);flex-wrap:wrap}
+.cb-group{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.cb-group label{font-size:11px;display:flex;align-items:center;gap:3px;cursor:pointer}
+.multi-date-picker{display:flex;flex-direction:column;gap:4px}
+.date-chip{display:inline-flex;align-items:center;gap:4px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);border-radius:4px;padding:2px 6px;font-size:11px}
+.date-chip button{border:none;background:none;cursor:pointer;color:var(--blue);font-size:12px;padding:0;line-height:1}
+.cell-tags{display:flex;flex-direction:column;align-items:center;gap:1px;font-size:9px;line-height:1.2}
+</style>
+</head><body>
+<div class="app">
+<div class="topbar">
+  <span style="font-size:16px">📅</span>
+  <h1>日翊假勤排班管理系統 2026</h1>
+  <div style="margin-left:auto;font-size:11px;color:var(--text2)" id="clk"></div>
+</div>
+<div class="main-tabs">
+  <div class="main-tab active" onclick="goMain('fill')">📋 填寫假勤</div>
+  <div class="main-tab" onclick="goMain('maintain')">🔧 課別維護</div>
+  <div class="main-tab" onclick="goMain('export')">📤 各課匯出</div>
+</div>
+<div class="content">
+
+<!-- FILL -->
+<div id="panel-fill" class="panel active">
+  <div class="ctrl-row">
+    <select id="f-year"><option value="2026">2026年</option></select>
+    <select id="f-month" onchange="rebuildCal();renderFillConds()"></select>
+    <select id="f-bu" onchange="updateFCourse();rebuildCal()">
+      <option value="">選部別</option><option>一部</option><option>二部</option><option>業務部</option>
+    </select>
+    <select id="f-ke" onchange="rebuildCal();renderFillConds()"><option value="">選課別</option></select>
+    <span id="anomaly-msg" style="font-size:11px;font-weight:600;color:var(--red);display:none"></span>
+  </div>
+  <!-- 每月條件區塊（嵌在填寫頁） -->
+  <div id="fill-conds-section" style="border:1px solid var(--purple-bd);border-radius:8px;padding:10px 12px;background:var(--purple-bg);display:none">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+      <span style="font-size:12px;font-weight:600;color:var(--purple)">⚙️ 本課每月條件</span>
+      <span id="fill-conds-course-label" style="font-size:11px;color:var(--text2)"></span>
+      <button class="btn" style="height:26px;font-size:11px;padding:0 9px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd)" onclick="toggleLeavePanel()">📊 特休總覽</button>
+      <button class="btn" style="height:26px;font-size:11px;padding:0 9px;background:var(--purple);color:#fff;border:none;margin-left:auto" onclick="toggleCondForm()">＋ 新增條件</button>
+    </div>
+    <!-- 新增條件表單（預設隱藏） -->
+    <div id="cond-inline-form" style="display:none;border:1px solid var(--purple-bd);border-radius:6px;padding:10px;background:#fff;margin-bottom:8px">
+      <!-- 條件類型選擇 -->
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
+        <label style="font-size:11px;display:flex;align-items:center;gap:3px;cursor:pointer"><input type="radio" name="cond-type" value="combined" checked onchange="condTypeChange()"> 特休＋換休合計上限</label>
+        <label style="font-size:11px;display:flex;align-items:center;gap:3px;cursor:pointer"><input type="radio" name="cond-type" value="special" onchange="condTypeChange()"> 特殊條件（指定日期）</label>
+      </div>
+      <!-- 特休+換休合計上限 -->
+      <div id="cond-form-combined" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:7px">
+        <span style="font-size:12px;font-weight:600;color:var(--purple)">特休＋換休</span>
+        <span style="font-size:12px">每日合計上限</span>
+        <input type="number" id="cond-combined-count" value="4" min="1" max="99" style="width:50px;height:28px;padding:0 6px">
+        <span style="font-size:12px">人（全月每日套用）</span>
+      </div>
+      <!-- 特殊條件：指定日期上限 -->
+      <div id="cond-form-special" style="display:none;flex-direction:column;gap:8px;margin-bottom:7px">
+        <div style="font-size:11px;color:var(--text2)">指定日期的特休＋換休合計上限（優先於全月條件）</div>
+        <div id="special-rows" style="display:flex;flex-direction:column;gap:6px"></div>
+        <button type="button" class="btn btn-s" style="height:26px;font-size:11px;width:fit-content" onclick="addSpecialRow()">＋ 新增日期</button>
+      </div>
+
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-p" style="height:26px;font-size:11px" onclick="addConditionInline()">確認新增</button>
+        <button class="btn btn-s" style="height:26px;font-size:11px" onclick="toggleCondForm()">取消</button>
+      </div>
+    </div>
+    <!-- 條件列表 -->
+    <div id="fill-cond-list" style="display:flex;flex-direction:column;gap:5px"></div>
+  </div>
+  <div class="legend">
+    <div class="leg"><div class="legbox" style="background:var(--red-bg);border:1px solid var(--red-bd)"></div>特休</div>
+    <div class="leg"><div class="legbox" style="background:var(--green-bg);border:1px solid var(--green-bd)"></div>換休</div>
+    <div class="leg"><div class="legbox" style="background:var(--pink-bg);border:1px solid var(--pink-bd)"></div>生日</div>
+    <div class="leg"><div class="legbox" style="background:var(--blue-bg);border:1px solid var(--blue-bd)"></div>加班</div>
+    <div class="leg"><div class="legbox" style="background:var(--purple-bg);border:1px solid var(--purple-bd)"></div>課會(全課)</div>
+    <div class="leg"><div class="legbox" style="background:var(--orange-bg);border:1px solid var(--orange-bd)"></div>部務(課長)</div>
+    <div class="leg"><div class="legbox" style="background:var(--teal-bg);border:1px solid var(--teal-bd)"></div>上課</div>
+    <div class="leg"><div class="legbox" style="background:#FFF3E0;border:1px solid #FFCC80"></div>國定假日</div>
+    <div class="leg"><div class="legbox" style="background:#FFF5F5"></div>週日(✕)</div>
+    <div class="leg"><div class="legbox" style="background:#FFFDE7;border:1px solid #FFE082"></div>他業帶組</div>
+    <div class="leg"><div class="legbox" style="background:#F3E5F5;border:1px solid var(--purple-bd)"></div>出差</div>
+  </div>
+  <div id="fill-hint" style="text-align:center;padding:40px;color:var(--text2)">請選擇年月與課別後開始填寫</div>
+  <div class="cal-outer" id="cal-outer" style="display:none">
+    <div id="cal-stats" class="stat-pills"></div>
+    <table class="cal-table" id="cal-table"></table>
+  </div>
+</div>
+
+<!-- MAINTAIN -->
+<div id="panel-maintain" class="panel">
+  <div class="ctrl-row">
+    <select id="m-bu" onchange="updateMCourse()">
+      <option value="">選部別</option><option>一部</option><option>二部</option><option>業務部</option>
+    </select>
+    <select id="m-ke" onchange="loadMaintain()"><option value="">選課別</option></select>
+    <select id="m-month" onchange="loadMaintain()"></select>
+  </div>
+  <div id="maint-content" style="color:var(--text2);font-size:12px;text-align:center;padding:30px">請選擇部別與課別</div>
+</div>
+
+<!-- CONDITIONS -->
+
+
+<!-- EXPORT -->
+<div id="panel-export" class="panel">
+  <div class="ctrl-row">
+    <select id="exp-year"><option value="2026">2026年</option></select>
+    <select id="exp-month" onchange="renderExport()"></select>
+    <button class="btn btn-s" onclick="renderExport()">重新整理</button>
+    <button class="btn btn-orange" onclick="exportYewuCalendar()">📅 匯出他業點檢行事曆 (全部)</button>
+  </div>
+  <div id="export-grid" class="export-grid" style="margin-top:8px"></div>
+  <div id="export-result" style="margin-top:8px"></div>
+</div>
+
+</div>
+</div>
+
+<div class="overlay" id="overlay" style="display:none" onclick="closePopup()"></div>
+<div class="popup" id="popup" style="display:none">
+  <h3 id="popup-title">選擇假別</h3>
+  <div class="popup-grid">
+    <div class="popup-btn tag-s" onclick="setCell('s')">✦ 特休</div>
+    <div class="popup-btn tag-c" onclick="setCell('c')">⇄ 換休</div>
+    <div class="popup-btn tag-b" onclick="setCell('b')">🎂 生日</div>
+    <div class="popup-btn tag-o" onclick="setCell('o')">⏰ 加班</div>
+  </div>
+  <button class="btn btn-s" style="width:100%;font-size:11px;margin-top:4px" onclick="setCell(null)">清除此格</button>
+</div>
+
+<script>
+// ===== DATA =====
+const ALL=[{"部別":"一部","課別":"北一課","工號":"9812013","姓名":"趙千皓","職稱":"課長"},{"部別":"一部","課別":"北一課","工號":"10207029","姓名":"張絜涵","職稱":"助理高專"},{"部別":"一部","課別":"北一課","工號":"10305002","姓名":"蔡明達","職稱":"助理高專"},{"部別":"一部","課別":"北一課","工號":"9812019","姓名":"張昭儀","職稱":"資深專員"},{"部別":"一部","課別":"北一課","工號":"9906003","姓名":"劉育青","職稱":"資深專員"},{"部別":"一部","課別":"北一課","工號":"10005011","姓名":"吳尚諭","職稱":"資深專員"},{"部別":"一部","課別":"北一課","工號":"10011004","姓名":"盧欣怡","職稱":"資深專員"},{"部別":"一部","課別":"北一課","工號":"10206009","姓名":"邱筱雯","職稱":"資深專員"},{"部別":"一部","課別":"北一課","工號":"10207006","姓名":"謝孟純","職稱":"資深專員"},{"部別":"一部","課別":"北一課","工號":"10207027","姓名":"楊采嫺","職稱":"資深專員"},{"部別":"一部","課別":"北一課","工號":"10207031","姓名":"邱秀枝","職稱":"資深專員"},{"部別":"一部","課別":"北一課","工號":"10508005","姓名":"何芝穎","職稱":"資深專員"},{"部別":"一部","課別":"北一課","工號":"10512004","姓名":"許綉敏","職稱":"資深專員"},{"部別":"一部","課別":"北一課","工號":"10512008","姓名":"馬雅憶","職稱":"資深專員"},{"部別":"一部","課別":"北一課","工號":"10207005","姓名":"黃于嘉","職稱":"專員"},{"部別":"一部","課別":"北一課","工號":"11007010","姓名":"董又禎","職稱":"專員"},{"部別":"一部","課別":"北一課","工號":"11102002","姓名":"陳佩君","職稱":"專員"},{"部別":"一部","課別":"北一課","工號":"11103003","姓名":"朱雅卉","職稱":"專員"},{"部別":"一部","課別":"北一課","工號":"11007009","姓名":"吳承家","職稱":"專員"},{"部別":"一部","課別":"北一課","工號":"11303014","姓名":"李俊廷","職稱":"專員"},{"部別":"一部","課別":"北一課","工號":"11103015","姓名":"陳怡珊","職稱":"中階助理"},{"部別":"一部","課別":"北一課","工號":"11304017","姓名":"林竣義","職稱":"中階助理"},{"部別":"一部","課別":"北一課","工號":"11305003","姓名":"吳佳祺","職稱":"中階助理"},{"部別":"一部","課別":"北一課","工號":"11306001","姓名":"黃祺雅","職稱":"中階助理"},{"部別":"一部","課別":"北一課","工號":"11404004","姓名":"李姵瑩","職稱":"中階助理"},{"部別":"一部","課別":"北一課","工號":"11406001","姓名":"蔡羽姍","職稱":"中階助理"},{"部別":"一部","課別":"北二課","工號":"9812011","姓名":"黃惠敏","職稱":"課長"},{"部別":"一部","課別":"北二課","工號":"10511001","姓名":"張可綸","職稱":"助理高專"},{"部別":"一部","課別":"北二課","工號":"10011011","姓名":"姚宏頴","職稱":"資深專員"},{"部別":"一部","課別":"北二課","工號":"10307005","姓名":"陳渝淇","職稱":"資深專員"},{"部別":"一部","課別":"北二課","工號":"10511005","姓名":"孫于婷","職稱":"資深專員"},{"部別":"一部","課別":"北二課","工號":"10706003","姓名":"陳怡安","職稱":"資深專員"},{"部別":"一部","課別":"北二課","工號":"11003004","姓名":"陳儀真","職稱":"專員"},{"部別":"一部","課別":"北二課","工號":"11109003","姓名":"郭于菁","職稱":"專員"},{"部別":"一部","課別":"北二課","工號":"10704015","姓名":"潘怡靜","職稱":"專員"},{"部別":"一部","課別":"北二課","工號":"11206009","姓名":"蔡仙雯","職稱":"專員"},{"部別":"一部","課別":"北二課","工號":"10904004","姓名":"劉振凱","職稱":"中階助理"},{"部別":"一部","課別":"北二課","工號":"11207005","姓名":"呂玉嬋","職稱":"中階助理"},{"部別":"一部","課別":"北二課","工號":"11208007","姓名":"黃鈺庭","職稱":"中階助理"},{"部別":"一部","課別":"北二課","工號":"11312001","姓名":"陳珍儀","職稱":"中階助理"},{"部別":"一部","課別":"北二課","工號":"11402020","姓名":"張雅淇","職稱":"中階助理"},{"部別":"一部","課別":"北二課","工號":"11404008","姓名":"孫煥軒","職稱":"中階助理"},{"部別":"一部","課別":"北二課","工號":"11409007","姓名":"游秋瑜","職稱":"中階助理"},{"部別":"一部","課別":"北二課","工號":"11408005","姓名":"林美君","職稱":"初階助理"},{"部別":"一部","課別":"北二課","工號":"11502001","姓名":"吳佳容","職稱":"初階助理"},{"部別":"一部","課別":"北二課","工號":"11503001","姓名":"黃稚雅","職稱":"初階助理"},{"部別":"一部","課別":"北三課","工號":"9812009","姓名":"黃義麟","職稱":"課長"},{"部別":"一部","課別":"北三課","工號":"9812012","姓名":"王詩婷","職稱":"助理高專"},{"部別":"一部","課別":"北三課","工號":"9911005","姓名":"吳凱文","職稱":"助理高專"},{"部別":"一部","課別":"北三課","工號":"10302004","姓名":"林翊桀","職稱":"資深專員"},{"部別":"一部","課別":"北三課","工號":"10403004","姓名":"李佩芳","職稱":"資深專員"},{"部別":"一部","課別":"北三課","工號":"11106008","姓名":"連玟雅","職稱":"專員"},{"部別":"一部","課別":"北三課","工號":"11202007","姓名":"王雨柔","職稱":"專員"},{"部別":"一部","課別":"北三課","工號":"11204005","姓名":"李姿儀","職稱":"專員"},{"部別":"一部","課別":"北三課","工號":"11209008","姓名":"陳宛吟","職稱":"專員"},{"部別":"一部","課別":"北三課","工號":"11303007","姓名":"許翔宇","職稱":"專員"},{"部別":"一部","課別":"北三課","工號":"11306002","姓名":"郭亞涵","職稱":"專員"},{"部別":"一部","課別":"北三課","工號":"11309001","姓名":"蔡旻宸","職稱":"事務專員"},{"部別":"一部","課別":"北三課","工號":"11312002","姓名":"陳建元","職稱":"中階助理"},{"部別":"一部","課別":"北三課","工號":"11403002","姓名":"高子婷","職稱":"中階助理"},{"部別":"一部","課別":"北三課","工號":"11406003","姓名":"陳旻吟","職稱":"中階助理"},{"部別":"一部","課別":"北三課","工號":"11410006","姓名":"邱姵菁","職稱":"中階助理"},{"部別":"一部","課別":"北四課","工號":"10701003","姓名":"陳慧芯","職稱":"課長"},{"部別":"一部","課別":"北四課","工號":"9911004","姓名":"蘇姵菁","職稱":"助理高專"},{"部別":"一部","課別":"北四課","工號":"10407008","姓名":"陳俊宇","職稱":"資深專員"},{"部別":"一部","課別":"北四課","工號":"10506004","姓名":"游慧美","職稱":"資深專員"},{"部別":"一部","課別":"北四課","工號":"10701002","姓名":"施欣妤","職稱":"資深專員"},{"部別":"一部","課別":"北四課","工號":"10806006","姓名":"楊子霈","職稱":"資深專員"},{"部別":"一部","課別":"北四課","工號":"10812005","姓名":"曾宣蓉","職稱":"資深專員"},{"部別":"一部","課別":"北四課","工號":"10404010","姓名":"胡紫歆","職稱":"專員"},{"部別":"一部","課別":"北四課","工號":"10705013","姓名":"賴怡華","職稱":"專員"},{"部別":"一部","課別":"北四課","工號":"10903013","姓名":"姚妏姍","職稱":"專員"},{"部別":"一部","課別":"北四課","工號":"11005014","姓名":"黃思媛","職稱":"專員"},{"部別":"一部","課別":"北四課","工號":"11306003","姓名":"黃慧儀","職稱":"專員"},{"部別":"一部","課別":"北四課","工號":"11308001","姓名":"李怡萱","職稱":"專員"},{"部別":"一部","課別":"北四課","工號":"11108014","姓名":"吳嘉玲","職稱":"中階助理"},{"部別":"一部","課別":"北四課","工號":"11205016","姓名":"陳子婷","職稱":"中階助理"},{"部別":"一部","課別":"北四課","工號":"11206010","姓名":"魏祥禮","職稱":"中階助理"},{"部別":"一部","課別":"北四課","工號":"11304004","姓名":"曾翊瑛","職稱":"中階助理"},{"部別":"一部","課別":"北四課","工號":"11311002","姓名":"陳欣汝","職稱":"中階助理"},{"部別":"一部","課別":"北四課","工號":"11403005","姓名":"邱雅婷","職稱":"中階助理"},{"部別":"一部","課別":"北四課","工號":"11403006","姓名":"廖秀晏","職稱":"中階助理"},{"部別":"一部","課別":"北四課","工號":"11403007","姓名":"張惠雅","職稱":"中階助理"},{"部別":"一部","課別":"北四課","工號":"11403011","姓名":"吳佳錡","職稱":"中階助理"},{"部別":"一部","課別":"北四課","工號":"11408003","姓名":"陳穎宣","職稱":"中階助理"},{"部別":"一部","課別":"北四課","工號":"11409002","姓名":"張育嘉","職稱":"中階助理"},{"部別":"一部","課別":"北四課","工號":"11503003","姓名":"胡家瑀","職稱":"初階助理"},{"部別":"一部","課別":"桃竹課","工號":"9812001","姓名":"柯惠珍","職稱":"課長"},{"部別":"一部","課別":"桃竹課","工號":"9812004","姓名":"卜淑貞","職稱":"助理高專"},{"部別":"一部","課別":"桃竹課","工號":"9812005","姓名":"徐譽玲","職稱":"助理高專"},{"部別":"一部","課別":"桃竹課","工號":"9812007","姓名":"柯惠華","職稱":"助理高專"},{"部別":"一部","課別":"桃竹課","工號":"9812002","姓名":"游雅慧","職稱":"資深專員"},{"部別":"一部","課別":"桃竹課","工號":"9903004","姓名":"劉乾弘","職稱":"資深專員"},{"部別":"一部","課別":"桃竹課","工號":"10207013","姓名":"邱佳雯","職稱":"資深專員"},{"部別":"一部","課別":"桃竹課","工號":"10208007","姓名":"詹淑珍","職稱":"資深專員"},{"部別":"一部","課別":"桃竹課","工號":"10306004","姓名":"陳琬璇","職稱":"資深專員"},{"部別":"一部","課別":"桃竹課","工號":"10307001","姓名":"黃安琪","職稱":"資深專員"},{"部別":"一部","課別":"桃竹課","工號":"10312001","姓名":"楊偲婷","職稱":"資深專員"},{"部別":"一部","課別":"桃竹課","工號":"10404005","姓名":"黃瑋君","職稱":"資深專員"},{"部別":"一部","課別":"桃竹課","工號":"10612007","姓名":"馮蕾蕾","職稱":"資深專員"},{"部別":"一部","課別":"桃竹課","工號":"10707001","姓名":"蔡鎮宇","職稱":"資深專員"},{"部別":"一部","課別":"桃竹課","工號":"10508006","姓名":"鍾秀蓉","職稱":"專員"},{"部別":"一部","課別":"桃竹課","工號":"10811005","姓名":"黃孟娸","職稱":"專員"},{"部別":"一部","課別":"桃竹課","工號":"11402003","姓名":"陳雅茜","職稱":"中階助理"},{"部別":"一部","課別":"桃竹課","工號":"11402004","姓名":"林玟妤","職稱":"中階助理"},{"部別":"一部","課別":"桃竹課","工號":"11402016","姓名":"李欣梅","職稱":"中階助理"},{"部別":"一部","課別":"桃竹課","工號":"11403003","姓名":"彭亭育","職稱":"中階助理"},{"部別":"一部","課別":"桃竹課","工號":"11403015","姓名":"方亭予","職稱":"初階助理"},{"部別":"一部","課別":"桃竹課","工號":"11405003","姓名":"蘇于倢","職稱":"初階助理"},{"部別":"一部","課別":"桃竹課","工號":"11503002","姓名":"陳俞如","職稱":"初階助理"},{"部別":"二部","課別":"台中課","工號":"10509005","姓名":"陳詩旻","職稱":"課長"},{"部別":"二部","課別":"台中課","工號":"9803004","姓名":"林沛貞","職稱":"助理高專"},{"部別":"二部","課別":"台中課","工號":"10002003","姓名":"楊莉萍","職稱":"助理高專"},{"部別":"二部","課別":"台中課","工號":"10009005","姓名":"吳嘉怡","職稱":"助理高專"},{"部別":"二部","課別":"台中課","工號":"10011005","姓名":"唐敏琇","職稱":"助理高專"},{"部別":"二部","課別":"台中課","工號":"9810001","姓名":"游淑美","職稱":"資深專員"},{"部別":"二部","課別":"台中課","工號":"10005009","姓名":"黃婉婷","職稱":"資深專員"},{"部別":"二部","課別":"台中課","工號":"10007001","姓名":"巫姿儀","職稱":"資深專員"},{"部別":"二部","課別":"台中課","工號":"10009008","姓名":"溫欣潔","職稱":"資深專員"},{"部別":"二部","課別":"台中課","工號":"10011006","姓名":"張雅淳","職稱":"資深專員"},{"部別":"二部","課別":"台中課","工號":"10011007","姓名":"張雅婷","職稱":"資深專員"},{"部別":"二部","課別":"台中課","工號":"10207017","姓名":"張家瑄","職稱":"資深專員"},{"部別":"二部","課別":"台中課","工號":"10509004","姓名":"周佩誼","職稱":"資深專員"},{"部別":"二部","課別":"台中課","工號":"10605002","姓名":"姚雅瀞","職稱":"資深專員"},{"部別":"二部","課別":"台中課","工號":"10612008","姓名":"王沛庭","職稱":"資深專員"},{"部別":"二部","課別":"台中課","工號":"10803014","姓名":"方宣喬","職稱":"資深專員"},{"部別":"二部","課別":"台中課","工號":"10804040","姓名":"張妤甄","職稱":"資深專員"},{"部別":"二部","課別":"台中課","工號":"10611008","姓名":"石宜華","職稱":"專員"},{"部別":"二部","課別":"台中課","工號":"10812002","姓名":"謝育汝","職稱":"專員"},{"部別":"二部","課別":"台中課","工號":"10905003","姓名":"洪棠雅","職稱":"專員"},{"部別":"二部","課別":"台中課","工號":"11003007","姓名":"李洹","職稱":"專員"},{"部別":"二部","課別":"台中課","工號":"11006009","姓名":"陳思涵","職稱":"專員"},{"部別":"二部","課別":"台中課","工號":"11104006","姓名":"曾子芃","職稱":"專員"},{"部別":"二部","課別":"台中課","工號":"11304006","姓名":"蕭宇瑄","職稱":"專員"},{"部別":"二部","課別":"台中課","工號":"10912003","姓名":"劉彥妤","職稱":"事務專員"},{"部別":"二部","課別":"台中課","工號":"10208010","姓名":"賴雯蓉","職稱":"中階助理"},{"部別":"二部","課別":"台中課","工號":"11112004","姓名":"郭彥德","職稱":"中階助理"},{"部別":"二部","課別":"台中課","工號":"11208011","姓名":"趙思綺","職稱":"中階助理"},{"部別":"二部","課別":"台中課","工號":"11308003","姓名":"宋韋築","職稱":"中階助理"},{"部別":"二部","課別":"台中課","工號":"11309002","姓名":"黃慧如","職稱":"中階助理"},{"部別":"二部","課別":"台中課","工號":"11404003","姓名":"黃彩涵","職稱":"中階助理"},{"部別":"二部","課別":"台中課","工號":"11409008","姓名":"黃意雯","職稱":"中階助理"},{"部別":"二部","課別":"台中課","工號":"11403004","姓名":"陳沛瑜","職稱":"初階助理"},{"部別":"二部","課別":"台中課","工號":"11404002","姓名":"廖梓涵","職稱":"初階助理"},{"部別":"二部","課別":"嘉南課","工號":"9901007","姓名":"盧巧汶","職稱":"課長"},{"部別":"二部","課別":"嘉南課","工號":"9901002","姓名":"楊富源","職稱":"助理高專"},{"部別":"二部","課別":"嘉南課","工號":"9901006","姓名":"王麗雯","職稱":"助理高專"},{"部別":"二部","課別":"嘉南課","工號":"10207025","姓名":"吳雅涵","職稱":"助理高專"},{"部別":"二部","課別":"嘉南課","工號":"10205003","姓名":"謝依秀","職稱":"資深專員"},{"部別":"二部","課別":"嘉南課","工號":"10207045","姓名":"黃心怡","職稱":"資深專員"},{"部別":"二部","課別":"嘉南課","工號":"10404007","姓名":"林佳儀","職稱":"資深專員"},{"部別":"二部","課別":"嘉南課","工號":"10805004","姓名":"張瑜方","職稱":"資深專員"},{"部別":"二部","課別":"嘉南課","工號":"10806007","姓名":"吳珮如","職稱":"資深專員"},{"部別":"二部","課別":"嘉南課","工號":"10903009","姓名":"楊嘉琪","職稱":"資深專員"},{"部別":"二部","課別":"嘉南課","工號":"10405008","姓名":"呂貞儀","職稱":"專員"},{"部別":"二部","課別":"嘉南課","工號":"10803018","姓名":"陳韋如","職稱":"專員"},{"部別":"二部","課別":"嘉南課","工號":"10605004","姓名":"莊雯琁","職稱":"中階助理"},{"部別":"二部","課別":"嘉南課","工號":"10803017","姓名":"蔣宛芝","職稱":"中階助理"},{"部別":"二部","課別":"嘉南課","工號":"11203006","姓名":"黃主芸","職稱":"中階助理"},{"部別":"二部","課別":"嘉南課","工號":"11402012","姓名":"蕭亦姿","職稱":"中階助理"},{"部別":"二部","課別":"嘉南課","工號":"11204007","姓名":"蔡定菲","職稱":"初階助理"},{"部別":"二部","課別":"嘉南課","工號":"11310006","姓名":"蘇伊玲","職稱":"初階助理"},{"部別":"二部","課別":"高屏課","工號":"10002002","姓名":"程俊生","職稱":"課長"},{"部別":"二部","課別":"高屏課","工號":"10206008","姓名":"顏愛蓮","職稱":"助理高專"},{"部別":"二部","課別":"高屏課","工號":"10509001","姓名":"曾和雅","職稱":"助理高專"},{"部別":"二部","課別":"高屏課","工號":"9803011","姓名":"陳紀珊","職稱":"資深專員"},{"部別":"二部","課別":"高屏課","工號":"9905003","姓名":"林宜璇","職稱":"資深專員"},{"部別":"二部","課別":"高屏課","工號":"10005010","姓名":"簡竹綿","職稱":"資深專員"},{"部別":"二部","課別":"高屏課","工號":"10206007","姓名":"王貞茜","職稱":"資深專員"},{"部別":"二部","課別":"高屏課","工號":"10207022","姓名":"林紋汝","職稱":"資深專員"},{"部別":"二部","課別":"高屏課","工號":"10404003","姓名":"黃慧玲","職稱":"資深專員"},{"部別":"二部","課別":"高屏課","工號":"10610009","姓名":"侯鑫鳳","職稱":"資深專員"},{"部別":"二部","課別":"高屏課","工號":"10404004","姓名":"蕭婉蓁","職稱":"專員"},{"部別":"二部","課別":"高屏課","工號":"10909006","姓名":"鄭紹萱","職稱":"專員"},{"部別":"二部","課別":"高屏課","工號":"11003009","姓名":"吳佳諼","職稱":"專員"},{"部別":"二部","課別":"高屏課","工號":"11103007","姓名":"趙翊岑","職稱":"專員"},{"部別":"二部","課別":"高屏課","工號":"11103012","姓名":"孫于𣶏","職稱":"專員"},{"部別":"二部","課別":"高屏課","工號":"10902003","姓名":"楊雅筑","職稱":"中階助理"},{"部別":"二部","課別":"高屏課","工號":"10906005","姓名":"顏蕙蕙","職稱":"中階助理"},{"部別":"二部","課別":"高屏課","工號":"11310007","姓名":"林泳洳","職稱":"中階助理"},{"部別":"二部","課別":"高屏課","工號":"11405001","姓名":"林怡佩","職稱":"中階助理"},{"部別":"二部","課別":"高屏課","工號":"11408004","姓名":"陳玉茹","職稱":"中階助理"},{"部別":"二部","課別":"高屏課","工號":"11504002","姓名":"簡姀秀","職稱":"初階助理"},{"部別":"二部","課別":"高屏課","工號":"11504003","姓名":"簡維蓉","職稱":"初階助理"},{"部別":"業務部","課別":"業務課","工號":"10009003","姓名":"黃秀惠","職稱":"課長"},{"部別":"業務部","課別":"業務課","工號":"10707005","姓名":"林秀真","職稱":"資深專員"},{"部別":"業務部","課別":"業務課","工號":"10405005","姓名":"鄭怡君","職稱":"初階助理"},{"部別":"業務部","課別":"教育訓練課","工號":"9803003","姓名":"彭仰徽","職稱":"課長"},{"部別":"業務部","課別":"教育訓練課","工號":"9803008","姓名":"許慧珍","職稱":"助理高專"},{"部別":"業務部","課別":"教育訓練課","工號":"10012001","姓名":"陳紀源","職稱":"資深專員"}];
+
+const PERSON_INFO={"王怡晶": {"annual": 19, "bday": [8, 28], "hire": "2013-04-01"}, "趙千皓": {"annual": 22, "bday": [3, 21], "hire": "2009-12-01"}, "張絜涵": {"annual": 18, "bday": [10, 28], "hire": "2013-07-08"}, "蔡明達": {"annual": 18, "bday": [3, 26], "hire": "2014-05-06"}, "張昭儀": {"annual": 22, "bday": [7, 30], "hire": "2009-12-28"}, "劉育青": {"annual": 21, "bday": [12, 30], "hire": "2010-06-07"}, "吳尚諭": {"annual": 21, "bday": [7, 28], "hire": "2011-05-01"}, "盧欣怡": {"annual": 20, "bday": [6, 12], "hire": "2011-11-01"}, "邱筱雯": {"annual": 18, "bday": [8, 1], "hire": "2013-06-18"}, "謝孟純": {"annual": 18, "bday": [4, 1], "hire": "2013-07-01"}, "楊采嫺": {"annual": 18, "bday": [7, 15], "hire": "2013-07-08"}, "邱秀枝": {"annual": 18, "bday": [8, 3], "hire": "2013-07-08"}, "何芝穎": {"annual": 15, "bday": [10, 18], "hire": "2016-08-09"}, "許綉敏": {"annual": 15, "bday": [12, 26], "hire": "2016-12-05"}, "馬雅憶": {"annual": 15, "bday": [5, 6], "hire": "2016-12-19"}, "黃于嘉": {"annual": 18, "bday": [12, 21], "hire": "2013-07-01"}, "吳承家": {"annual": 14, "bday": [7, 5], "hire": "2021-07-05"}, "董又禎": {"annual": 14, "bday": [6, 1], "hire": "2021-07-05"}, "陳佩君": {"annual": 14, "bday": [6, 18], "hire": "2022-02-14"}, "朱雅卉": {"annual": 14, "bday": [11, 7], "hire": "2022-03-01"}, "李俊廷": {"annual": 10, "bday": [12, 30], "hire": "2024-03-26"}, "陳怡珊": {"annual": 14, "bday": [1, 18], "hire": "2022-03-21"}, "林竣義": {"annual": 10, "bday": [10, 9], "hire": "2024-04-29"}, "吳佳祺": {"annual": 7, "bday": [7, 1], "hire": "2024-05-06"}, "黃祺雅": {"annual": 7, "bday": [4, 27], "hire": "2024-06-03"}, "李姵瑩": {"annual": 7, "bday": [10, 7], "hire": "2025-04-14"}, "蔡羽姍": {"annual": 3, "bday": [6, 30], "hire": "2025-06-09"}, "蘇盈瑄": {"annual": 0, "bday": [7, 11], "hire": null}, "黃惠敏": {"annual": 22, "bday": [9, 26], "hire": "2009-12-01"}, "張可綸": {"annual": 15, "bday": [8, 29], "hire": "2016-11-01"}, "姚宏頴": {"annual": 20, "bday": [4, 13], "hire": "2011-11-14"}, "陳渝淇": {"annual": 17, "bday": [1, 16], "hire": "2014-07-14"}, "孫于婷": {"annual": 15, "bday": [7, 7], "hire": "2016-11-07"}, "陳怡安": {"annual": 15, "bday": [11, 8], "hire": "2018-06-04"}, "潘怡靜": {"annual": 15, "bday": [1, 28], "hire": "2018-04-16"}, "陳儀真": {"annual": 15, "bday": [2, 23], "hire": "2021-03-02"}, "郭于菁": {"annual": 14, "bday": [2, 21], "hire": "2022-09-05"}, "蔡仙雯": {"annual": 10, "bday": [2, 26], "hire": "2023-06-26"}, "劉振凱": {"annual": 15, "bday": [2, 9], "hire": "2020-04-06"}, "呂玉嬋": {"annual": 10, "bday": [10, 23], "hire": "2023-07-03"}, "黃鈺庭": {"annual": 10, "bday": [6, 25], "hire": "2023-08-07"}, "陳珍儀": {"annual": 7, "bday": [6, 6], "hire": "2024-12-02"}, "張雅淇": {"annual": 7, "bday": [7, 6], "hire": "2025-02-24"}, "孫煥軒": {"annual": 7, "bday": [10, 5], "hire": "2025-04-23"}, "游秋瑜": {"annual": 3, "bday": [12, 14], "hire": "2025-09-22"}, "林美君": {"annual": 3, "bday": [9, 20], "hire": "2025-08-19"}, "吳佳容": {"annual": 0, "bday": [8, 20], "hire": "2026-02-23"}, "黃稚雅": {"annual": 0, "bday": [9, 30], "hire": "2026-03-09"}, "林芝廷": {"annual": 0, "bday": [9, 4], "hire": "2026-04-20"}, "吳有謙": {"annual": 0, "bday": [3, 9], "hire": "2026-04-27"}, "黃義麟": {"annual": 22, "bday": [5, 10], "hire": "2009-12-01"}, "王詩婷": {"annual": 22, "bday": [5, 11], "hire": "2009-12-01"}, "吳凱文": {"annual": 21, "bday": [2, 8], "hire": "2010-11-01"}, "林翊桀": {"annual": 18, "bday": [1, 7], "hire": "2014-02-24"}, "李佩芳": {"annual": 17, "bday": [11, 7], "hire": "2015-03-09"}, "連玟雅": {"annual": 14, "bday": [9, 26], "hire": "2022-06-06"}, "王雨柔": {"annual": 14, "bday": [4, 13], "hire": "2023-02-13"}, "李姿儀": {"annual": 14, "bday": [1, 1], "hire": "2023-04-10"}, "陳宛吟": {"annual": 10, "bday": [1, 14], "hire": "2023-09-05"}, "許翔宇": {"annual": 10, "bday": [5, 16], "hire": "2024-03-11"}, "郭亞涵": {"annual": 7, "bday": [11, 17], "hire": "2024-06-03"}, "蔡旻宸": {"annual": 7, "bday": [1, 5], "hire": "2024-09-02"}, "邱姵菁": {"annual": 3, "bday": [8, 19], "hire": "2025-10-13"}, "陳建元": {"annual": 7, "bday": [2, 27], "hire": "2024-12-16"}, "高子婷": {"annual": 7, "bday": [12, 22], "hire": "2025-03-03"}, "陳旻吟": {"annual": 3, "bday": [9, 15], "hire": "2025-06-16"}, "陳慧芯": {"annual": 15, "bday": [1, 23], "hire": "2018-01-30"}, "蘇姵菁": {"annual": 21, "bday": [9, 2], "hire": "2010-11-01"}, "陳俊宇": {"annual": 16, "bday": [6, 19], "hire": "2015-07-27"}, "游慧美": {"annual": 15, "bday": [11, 24], "hire": "2016-06-01"}, "施欣妤": {"annual": 15, "bday": [6, 21], "hire": "2018-01-29"}, "楊子霈": {"annual": 15, "bday": [5, 2], "hire": "2019-06-17"}, "曾宣蓉": {"annual": 15, "bday": [11, 6], "hire": "2019-12-09"}, "姚妏姍": {"annual": 15, "bday": [11, 1], "hire": "2020-03-09"}, "胡紫歆": {"annual": 17, "bday": [10, 30], "hire": "2015-04-20"}, "賴怡華": {"annual": 15, "bday": [5, 12], "hire": "2018-05-07"}, "黃思媛": {"annual": 14, "bday": [6, 27], "hire": "2021-05-17"}, "黃慧儀": {"annual": 7, "bday": [2, 18], "hire": "2024-06-03"}, "李怡萱": {"annual": 7, "bday": [2, 5], "hire": "2024-08-01"}, "吳嘉玲": {"annual": 14, "bday": [10, 5], "hire": "2022-08-29"}, "陳子婷": {"annual": 10, "bday": [12, 25], "hire": "2023-05-22"}, "魏祥禮": {"annual": 10, "bday": [5, 23], "hire": "2023-06-26"}, "曾翊瑛": {"annual": 10, "bday": [6, 24], "hire": "2024-04-08"}, "陳欣汝": {"annual": 7, "bday": [4, 15], "hire": "2024-11-01"}, "邱雅婷": {"annual": 7, "bday": [6, 1], "hire": "2025-03-04"}, "廖秀晏": {"annual": 7, "bday": [4, 16], "hire": "2025-03-04"}, "張惠雅": {"annual": 7, "bday": [9, 4], "hire": "2025-03-04"}, "吳佳錡": {"annual": 7, "bday": [5, 8], "hire": "2025-03-10"}, "陳穎宣": {"annual": 3, "bday": [9, 30], "hire": "2025-08-05"}, "張育嘉": {"annual": 3, "bday": [1, 24], "hire": "2025-09-01"}, "胡家瑀": {"annual": 0, "bday": [8, 9], "hire": "2026-03-30"}, "黃鈺婷": {"annual": 15, "bday": [9, 13], "hire": "2019-11-04"}, "柯惠珍": {"annual": 22, "bday": [5, 7], "hire": "2009-12-01"}, "卜淑貞": {"annual": 22, "bday": [2, 22], "hire": "2009-12-01"}, "徐譽玲": {"annual": 22, "bday": [5, 28], "hire": "2009-12-01"}, "柯惠華": {"annual": 22, "bday": [5, 10], "hire": "2009-12-01"}, "游雅慧": {"annual": 22, "bday": [1, 22], "hire": "2009-12-01"}, "劉乾弘": {"annual": 22, "bday": [2, 23], "hire": "2010-03-01"}, "邱佳雯": {"annual": 18, "bday": [10, 23], "hire": "2013-07-01"}, "詹淑珍": {"annual": 18, "bday": [9, 8], "hire": "2013-08-01"}, "陳琬璇": {"annual": 17, "bday": [6, 22], "hire": "2014-06-09"}, "黃安琪": {"annual": 17, "bday": [1, 25], "hire": "2014-07-01"}, "楊偲婷": {"annual": 17, "bday": [10, 15], "hire": "2014-12-02"}, "黃瑋君": {"annual": 17, "bday": [8, 5], "hire": "2015-04-13"}, "馮蕾蕾": {"annual": 15, "bday": [7, 3], "hire": "2017-12-18"}, "蔡鎮宇": {"annual": 15, "bday": [7, 2], "hire": "2018-07-09"}, "鍾秀蓉": {"annual": 15, "bday": [2, 5], "hire": "2016-08-15"}, "黃孟娸": {"annual": 15, "bday": [12, 21], "hire": "2019-11-04"}, "陳雅茜": {"annual": 7, "bday": [7, 11], "hire": "2025-02-03"}, "林玟妤": {"annual": 7, "bday": [7, 28], "hire": "2025-02-03"}, "李欣梅": {"annual": 7, "bday": [12, 31], "hire": "2025-02-17"}, "彭亭育": {"annual": 7, "bday": [5, 17], "hire": "2025-03-03"}, "方亭予": {"annual": 7, "bday": [7, 30], "hire": "2025-03-17"}, "蘇于倢": {"annual": 3, "bday": [9, 11], "hire": "2025-05-12"}, "嚴詩閔": {"annual": 0, "bday": [6, 15], "hire": "2026-05-04"}, "黃慧文": {"annual": 22, "bday": [9, 25], "hire": "2009-12-01"}, "陳詩旻": {"annual": 15, "bday": [6, 10], "hire": "2016-09-19"}, "林沛貞": {"annual": 23, "bday": [7, 12], "hire": "2009-01-17"}, "楊莉萍": {"annual": 21, "bday": [1, 6], "hire": "2011-02-08"}, "吳嘉怡": {"annual": 20, "bday": [2, 18], "hire": "2011-09-13"}, "唐敏琇": {"annual": 20, "bday": [8, 17], "hire": "2011-11-01"}, "游淑美": {"annual": 22, "bday": [11, 1], "hire": "2009-10-01"}, "黃婉婷": {"annual": 20, "bday": [7, 13], "hire": "2011-05-23"}, "巫姿儀": {"annual": 20, "bday": [9, 15], "hire": "2011-07-01"}, "溫欣潔": {"annual": 20, "bday": [1, 6], "hire": "2011-09-26"}, "張雅淳": {"annual": 20, "bday": [8, 12], "hire": "2011-11-01"}, "張雅婷": {"annual": 20, "bday": [12, 11], "hire": "2011-11-01"}, "張家瑄": {"annual": 18, "bday": [8, 8], "hire": "2013-07-01"}, "周佩誼": {"annual": 15, "bday": [10, 7], "hire": "2016-09-19"}, "姚雅瀞": {"annual": 15, "bday": [9, 8], "hire": "2017-05-02"}, "王沛庭": {"annual": 15, "bday": [8, 31], "hire": "2017-12-18"}, "方宣喬": {"annual": 15, "bday": [12, 12], "hire": "2019-03-04"}, "張妤甄": {"annual": 15, "bday": [4, 17], "hire": "2019-04-08"}, "石宜華": {"annual": 15, "bday": [7, 10], "hire": "2017-11-13"}, "謝育汝": {"annual": 15, "bday": [3, 23], "hire": "2019-12-02"}, "洪棠雅": {"annual": 15, "bday": [6, 9], "hire": "2020-05-05"}, "李洹": {"annual": 15, "bday": [5, 2], "hire": "2021-03-08"}, "陳思涵": {"annual": 14, "bday": [8, 26], "hire": "2021-06-01"}, "曾子芃": {"annual": 14, "bday": [7, 2], "hire": "2022-04-06"}, "蕭宇瑄": {"annual": 10, "bday": [1, 29], "hire": "2024-04-08"}, "劉彥妤": {"annual": 15, "bday": [9, 16], "hire": "2020-12-01"}, "賴雯蓉": {"annual": 18, "bday": [8, 8], "hire": "2013-08-01"}, "郭彥德": {"annual": 14, "bday": [10, 16], "hire": "2022-12-12"}, "趙思綺": {"annual": 10, "bday": [2, 17], "hire": "2023-08-15"}, "宋韋築": {"annual": 7, "bday": [11, 20], "hire": "2024-08-05"}, "黃慧如": {"annual": 7, "bday": [2, 23], "hire": "2024-09-02"}, "黃彩涵": {"annual": 7, "bday": [6, 26], "hire": "2025-04-07"}, "黃意雯": {"annual": 3, "bday": [6, 4], "hire": "2025-09-23"}, "陳沛瑜": {"annual": 7, "bday": [2, 19], "hire": "2025-03-03"}, "廖梓涵": {"annual": 7, "bday": [3, 3], "hire": "2025-04-07"}, "王金惠": {"annual": 0, "bday": [2, 7], "hire": "2026-04-20"}, "潘鈺蓁": {"annual": 15, "bday": [2, 23], "hire": "2020-02-10"}, "台中辦公室": {"annual": 0, "bday": null, "hire": null}, "盧巧汶": {"annual": 22, "bday": [4, 11], "hire": "2010-01-01"}, "楊富源": {"annual": 22, "bday": [8, 25], "hire": "2010-01-01"}, "王麗雯": {"annual": 22, "bday": [10, 2], "hire": "2010-01-01"}, "吳雅涵": {"annual": 18, "bday": [2, 26], "hire": "2013-07-05"}, "謝依秀": {"annual": 18, "bday": [7, 5], "hire": "2013-05-13"}, "黃心怡": {"annual": 18, "bday": [2, 13], "hire": "2013-07-22"}, "林佳儀": {"annual": 17, "bday": [9, 28], "hire": "2015-04-14"}, "張瑜方": {"annual": 15, "bday": [7, 22], "hire": "2019-05-20"}, "吳珮如": {"annual": 15, "bday": [6, 8], "hire": "2019-06-18"}, "楊嘉琪": {"annual": 15, "bday": [1, 25], "hire": "2020-03-02"}, "呂貞儀": {"annual": 16, "bday": [12, 7], "hire": "2015-05-11"}, "陳韋如": {"annual": 15, "bday": [4, 24], "hire": "2019-03-05"}, "莊雯琁": {"annual": 15, "bday": [11, 5], "hire": "2017-05-02"}, "蔣宛芝": {"annual": 15, "bday": [11, 10], "hire": "2019-03-05"}, "黃主芸": {"annual": 14, "bday": [3, 13], "hire": "2023-03-06"}, "蕭亦姿": {"annual": 7, "bday": [3, 6], "hire": "2025-02-10"}, "蔡定菲": {"annual": 14, "bday": [1, 21], "hire": "2023-04-10"}, "蘇伊玲": {"annual": 7, "bday": [10, 23], "hire": "2024-10-28"}, "陳祈": {"annual": 14, "bday": [2, 14], "hire": "2023-02-13"}, "程俊生": {"annual": 21, "bday": [9, 10], "hire": "2011-02-08"}, "顏愛蓮": {"annual": 18, "bday": [1, 23], "hire": "2013-06-17"}, "曾和雅": {"annual": 15, "bday": [10, 7], "hire": "2016-09-01"}, "陳紀珊": {"annual": 30, "bday": [1, 2], "hire": "2000-07-01"}, "林宜璇": {"annual": 21, "bday": [2, 11], "hire": "2010-05-17"}, "簡竹綿": {"annual": 21, "bday": [12, 9], "hire": "2011-05-01"}, "王貞茜": {"annual": 18, "bday": [5, 8], "hire": "2013-06-17"}, "林紋汝": {"annual": 18, "bday": [2, 11], "hire": "2013-07-01"}, "黃慧玲": {"annual": 17, "bday": [1, 25], "hire": "2015-04-07"}, "侯鑫鳳": {"annual": 15, "bday": [12, 8], "hire": "2017-10-23"}, "蕭婉蓁": {"annual": 17, "bday": [12, 7], "hire": "2015-04-07"}, "鄭紹萱": {"annual": 15, "bday": [8, 8], "hire": "2020-09-07"}, "吳佳諼": {"annual": 15, "bday": [8, 23], "hire": "2021-03-15"}, "趙翊岑": {"annual": 14, "bday": [3, 24], "hire": "2022-03-07"}, "孫于𣶏": {"annual": 14, "bday": [3, 8], "hire": "2022-03-16"}, "傅伊玄": {"annual": 10, "bday": [7, 11], "hire": "2024-04-15"}, "楊雅筑": {"annual": 15, "bday": [1, 8], "hire": "2020-02-03"}, "顏蕙蕙": {"annual": 15, "bday": [11, 6], "hire": "2020-06-01"}, "林泳洳": {"annual": 7, "bday": [3, 8], "hire": "2024-10-28"}, "林怡佩": {"annual": 3, "bday": [10, 6], "hire": "2025-05-06"}, "陳玉茹": {"annual": 3, "bday": [8, 18], "hire": "2025-08-18"}, "蔡姀秀": {"annual": 0, "bday": [10, 4], "hire": "2026-04-13"}, "簡維蓉": {"annual": 0, "bday": [2, 14], "hire": "2026-04-13"}, "沈玉琳": {"annual": 15, "bday": [4, 26], "hire": "2017-04-05"}, "吳培根": {"annual": 22, "bday": [10, 17], "hire": "2010-03-08"}, "黃秀惠": {"annual": 20, "bday": [6, 27], "hire": "2011-09-01"}, "林秀真": {"annual": 15, "bday": [8, 27], "hire": "2018-07-16"}, "鄭怡君": {"annual": 17, "bday": [1, 2], "hire": "2015-05-04"}, "彭仰徽": {"annual": 30, "bday": [2, 14], "hire": "1996-01-08"}, "許慧珍": {"annual": 30, "bday": [12, 15], "hire": "1994-07-01"}, "陳紀源": {"annual": 20, "bday": [10, 21], "hire": "2011-12-01"}};
+const DEPT_MAP={"一部":["北一課","北二課","北三課","北四課","桃竹課"],"二部":["台中課","嘉南課","高屏課"],"業務部":["業務課","教育訓練課"]};
+const COURSES=["北一課","北二課","北三課","北四課","桃竹課","台中課","嘉南課","高屏課","業務課","教育訓練課"];
+// 可執行他業點檢帶組 (效期、SQC 在前)
+const YEWU_BAND=["效期","SQC","RGIS","歐都那","英斯伯","歐聖","福斯"]; // 可執行他業點檢帶組
+const YEWU_NOSQC=["RGIS","歐都那","英斯伯","歐聖","福斯"]; // 可執行他業(不含SQC)
+const YEWU=[...new Set([...YEWU_BAND,...YEWU_NOSQC])]; // 合併用於排程選單
+const TRIPS=["澎湖","金門","馬祖","花蓮","綠島"];
+const TRANSPORT=["機車","汽車","機車+汽車"];
+const TIME_OPTS=["上午","下午","整天"];
+const HOLIDAYS_2026={1:{1:"元旦",2:"元旦補假"},2:{6:"農曆除夕",7:"春節",8:"春節",9:"春節",10:"春節補假"},4:{3:"兒童節補假",4:"清明節兒童節"},6:{19:"端午節"},9:{29:"中秋節"},10:{9:"國慶日補假",10:"國慶日"},12:{25:"行憲紀念日"}};
+
+let leaveData={}, otOverride={}, maintainData={}, conditionsMap={};
+
+// 取得某人今年度特休天數
+function getAnnualLeave(name){ return (PERSON_INFO[name]||{}).annual||0; }
+// 取得某人生日 [month, day]
+function getBirthday(name){ return (PERSON_INFO[name]||{}).bday||null; }
+// 取得某人到職日
+function getHireDate(name){ return (PERSON_INFO[name]||{}).hire||null; }
+
+// 計算2026年特休：從到職日往後推一年的區間內可休天數
+function getLeaveYearInfo(name){
+  const hire=getHireDate(name);
+  if(!hire)return null;
+  const hd=new Date(hire);
+  const today=new Date('2026-05-06');
+  // 找2026年內最近的週年
+  let anniversary=new Date(hd);
+  anniversary.setFullYear(2026);
+  if(anniversary<new Date('2026-01-01')) anniversary.setFullYear(2027);
+  // Prev anniversary
+  let prevAnniv=new Date(anniversary);
+  prevAnniv.setFullYear(anniversary.getFullYear()-1);
+  return {
+    annual: getAnnualLeave(name),
+    from: prevAnniv.toISOString().slice(0,10),
+    to: new Date(anniversary.getTime()-86400000).toISOString().slice(0,10)
+  };
+}  // conditionsMap[course][month] = [{...}]
+let popupCtx={};
+
+// ===== HELPERS =====
+function getLeave(c,n,y,m,d){return leaveData[c]?.[n]?.[y]?.[m]?.[d]||null}
+function setLeave(c,n,y,m,d,t){
+  if(!leaveData[c])leaveData[c]={};if(!leaveData[c][n])leaveData[c][n]={};
+  if(!leaveData[c][n][y])leaveData[c][n][y]={};if(!leaveData[c][n][y][m])leaveData[c][n][y][m]={};
+  if(t===null)delete leaveData[c][n][y][m][d];else leaveData[c][n][y][m][d]=t;
+}
+function isHoliday(m,d){return !!(HOLIDAYS_2026[m]?.[d])}
+function holidayName(m,d){return HOLIDAYS_2026[m]?.[d]||''}
+function isOT(c,y,m,d){
+  const ov=otOverride[c]?.[y]?.[m]?.[d];if(ov===false)return false;
+  const dow=new Date(y,m-1,d).getDay();return dow===6||isHoliday(m,d);
+}
+function getMaintKey(course,year,month){return `${course}_${year}_${month}`;}
+function getMaint(course,year,month){
+  const k=getMaintKey(course,year,month);
+  if(!maintainData[k])maintainData[k]={transport:{},nozone:{},yewuBand:{},yewuNosqc:{},yewu:{},yewuRows:[],tripRows:[],meeting:[],dept:[],classRows:[]}; // classRows item: {date,time,note,persons:[]}
+  return maintainData[k];
+}
+
+// ===== CALENDAR EXTRA: get meeting/dept/class days for a course/month =====
+function getMeetingDays(course,year,month){
+  const d=getMaint(course,year,month);
+  return (d.meeting||[]).map(r=>r.date?parseInt(r.date.split('-')[2]):null).filter(Boolean);
+}
+function getDeptDays(course,year,month){
+  const d=getMaint(course,year,month);
+  return (d.dept||[]).map(r=>r.date?parseInt(r.date.split('-')[2]):null).filter(Boolean);
+}
+function getClassDays(course,year,month){
+  const d=getMaint(course,year,month);
+  return (d.classRows||[]).map(r=>r.date?parseInt(r.date.split('-')[2]):null).filter(Boolean);
+}
+function getClassDaysForPerson(course,year,month,personName){
+  const d=getMaint(course,year,month);
+  return (d.classRows||[])
+    .filter(function(r){return r.date&&(!r.persons||r.persons.length===0||r.persons.includes(personName));})
+    .map(function(r){return parseInt(r.date.split('-')[2]);})
+    .filter(Boolean);
+}
+function getMeetingTime(course,year,month,day){
+  const d=getMaint(course,year,month);
+  const r=(d.meeting||[]).find(r=>r.date&&parseInt(r.date.split('-')[2])===day);
+  return r?r.time:'整天';
+}
+function getDeptTime(course,year,month,day){
+  const d=getMaint(course,year,month);
+  const r=(d.dept||[]).find(r=>r.date&&parseInt(r.date.split('-')[2])===day);
+  return r?r.time:'整天';
+}
+// 取得某人在某天的他業帶組資訊
+function getYewuForPersonDay(course,year,month,day,personName){
+  const d=getMaint(course,year,month);
+  return (d.yewuRows||[]).filter(function(r){
+    if(!r.date)return false;
+    const rd=parseInt(r.date.split('-')[2]);
+    const rm=parseInt(r.date.split('-')[1]);
+    return rd===day&&rm===month&&r.person===personName;
+  });
+}
+// 取得某人在某天的出差資訊
+function getTripForPersonDay(course,year,month,day,personName){
+  const d=getMaint(course,year,month);
+  return (d.tripRows||[]).filter(function(r){
+    return r.person===personName&&(r.dates||[]).some(function(dt){
+      const rd=parseInt(dt.split('-')[2]);
+      const rm=parseInt(dt.split('-')[1]);
+      return rd===day&&rm===month;
+    });
+  });
+}
+function getClassTime(course,year,month,day){
+  const d=getMaint(course,year,month);
+  const r=(d.classRows||[]).find(r=>r.date&&parseInt(r.date.split('-')[2])===day);
+  return r?r.time:'整天';
+}
+
+
+function getConds(course,month){
+  if(!conditionsMap[course])conditionsMap[course]={};
+  if(!conditionsMap[course][month])conditionsMap[course][month]=[];
+  return conditionsMap[course][month];
+}
+function getAllConds(month){
+  // gather all courses' conditions for a given month (used for display)
+  const all=[];
+  Object.keys(conditionsMap).forEach(course=>{
+    (conditionsMap[course][month]||[]).forEach(c=>all.push({...c,course}));
+  });
+  return all;
+}
+
+// ===== INIT =====
+function initMonthSelects(){
+  ['f-month','m-month','exp-month'].forEach(id=>{
+    const el=document.getElementById(id);if(!el)return;
+    el.innerHTML=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月']
+      .map((m,i)=>`<option value="${i+1}"${i===4?' selected':''}>${m}</option>`).join('');
+  });
+}
+function updateFCourse(){
+  const bu=document.getElementById('f-bu').value,ke=document.getElementById('f-ke');
+  ke.innerHTML='<option value="">選課別</option>';
+  (bu?DEPT_MAP[bu]:COURSES).forEach(c=>{ke.innerHTML+=`<option>${c}</option>`;});
+}
+function updateMCourse(){
+  const bu=document.getElementById('m-bu').value,ke=document.getElementById('m-ke');
+  ke.innerHTML='<option value="">選課別</option>';
+  (bu?DEPT_MAP[bu]:COURSES).forEach(c=>{ke.innerHTML+=`<option>${c}</option>`;});
+}
+function goMain(id){
+  document.querySelectorAll('.main-tab').forEach((t,i)=>t.classList.toggle('active',['fill','maintain','export'][i]===id));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  if(id==='export')renderExport();
+  if(id==='fill'){renderFillConds();}
+}
+
+// ===== CALENDAR =====
+function rebuildCal(){
+  const course=document.getElementById('f-ke').value;
+  const year=parseInt(document.getElementById('f-year').value);
+  const month=parseInt(document.getElementById('f-month').value);
+  if(!course){document.getElementById('fill-hint').style.display='block';document.getElementById('cal-outer').style.display='none';return;}
+  document.getElementById('fill-hint').style.display='none';document.getElementById('cal-outer').style.display='block';
+  buildCalTable(course,year,month);
+}
+
+function buildCalTable(course,year,month){
+  const people=ALL.filter(p=>p.課別===course);
+  const daysInMonth=new Date(year,month,0).getDate();
+  const DOW=['日','一','二','三','四','五','六'];
+  const nextMonth=month===12?1:month+1;
+  const nextYear=month===12?year+1:year;
+  // dayOrder: {d, m, y} — d=1 at end is NEXT month's 1st
+  const dayOrder=[];
+  for(let d=2;d<=daysInMonth;d++)dayOrder.push({d,m:month,y:year});
+  dayOrder.push({d:1,m:nextMonth,y:nextYear});
+  const meetDays=getMeetingDays(course,year,month);
+  const deptDays=getDeptDays(course,year,month);
+  const classDays=getClassDays(course,year,month);
+
+  checkAnomalies(course,year,month,people);
+
+  // Header
+  let hdr=`<tr><th class="sticky-name">姓名</th>`;
+  dayOrder.forEach(function(o){
+    const dateObj=new Date(o.y,o.m-1,o.d);
+    const dow=DOW[dateObj.getDay()];
+    const isSun=dateObj.getDay()===0;
+    const isSat=dateObj.getDay()===6;
+    const isHol=isHoliday(o.m,o.d);
+    const hname=holidayName(o.m,o.d);
+    const isNextMonth=o.m!==month;
+    const col=isSun?'color:#E24B4A':isSat?'color:#185FA5':isHol?'color:#E65100':'';
+    const hn=hname?`<div style="font-size:8px;color:#E65100;line-height:1">${hname.slice(0,2)}</div>`:'';
+    const nextLabel=isNextMonth?'<div style="font-size:8px;color:#999;line-height:1">次月</div>':'';
+    const hasMeet=meetDays.includes(o.d)&&!isNextMonth;
+    const hasDept=deptDays.includes(o.d)&&!isNextMonth;
+    const hasClass=classDays.includes(o.d)&&!isNextMonth;
+    const dots=(hasMeet?'<span style="color:var(--purple);font-size:8px">●</span>':'')+(hasDept?'<span style="color:var(--orange);font-size:8px">●</span>':'')+(hasClass?'<span style="color:var(--teal);font-size:8px">●</span>':'');
+    hdr+=`<th style="${col}">${o.d}<br><span style="font-size:9px">${dow}</span>${nextLabel}${hn}${dots}</th>`;
+  });
+  hdr+='</tr>';
+
+  // OT row
+  let otRow=`<tr><td class="name-cell" style="color:var(--text2);font-size:10px">週六/假日<br>加班開關</td>`;
+  dayOrder.forEach(function(o){
+    const dateObj=new Date(o.y,o.m-1,o.d);
+    const isSun=dateObj.getDay()===0;
+    const isSat=dateObj.getDay()===6;
+    const isHol=isHoliday(o.m,o.d);
+    const isNextMonth=o.m!==month;
+    if(isSun){otRow+=`<td class="day-sun"><span class="day-x">✕</span></td>`;}
+    else if((isSat||isHol)&&!isNextMonth){
+      const on=isOT(course,year,o.m,o.d);
+      otRow+=`<td style="background:${on?'var(--blue-bg)':'#FFF5F5'};cursor:pointer" onclick="toggleOT('${course}',${year},${o.m},${o.d})">
+        <span style="font-size:10px;font-weight:700;color:${on?'var(--blue)':'#ccc'}">${on?'班':'✕'}</span></td>`;
+    }else{otRow+=`<td></td>`;}
+  });
+  otRow+='</tr>';
+
+  // People rows
+  const rows=people.map(p=>{
+    const isMgr=p.職稱==='課長';
+    var pinfo2=PERSON_INFO[p.姓名]||{};
+    var annualDays=pinfo2.annual||0;
+    var usedDays=getPersonSpecialUsed(course,year,p.姓名);
+    var remainDays=Math.max(0,annualDays-usedDays);
+    var badgeColor=remainDays===0?'background:#FCEBEB;color:#A32D2D':remainDays<=3?'background:#FFF9C4;color:#856404':'background:#E6F1FB;color:#185FA5';
+    var annualBadge=annualDays>0
+      ?'<span style="'+badgeColor+';border-radius:3px;padding:0 3px;font-size:8px;font-weight:600">特'+annualDays+'天/剩'+remainDays+'天</span>'
+      :'';
+    let r=`<td class="name-cell">${p.姓名}<br><span style="font-size:9px;color:var(--text2);font-weight:400">${p.職稱}</span><br>${annualBadge}</td>`;
+    dayOrder.forEach(function(o){
+      const dateObj=new Date(o.y,o.m-1,o.d);
+      const isSun=dateObj.getDay()===0;
+      const isSat=dateObj.getDay()===6;
+      const isHol=isHoliday(o.m,o.d);
+      const isNextMonth=o.m!==month;
+      const on=isOT(course,o.y,o.m,o.d);
+      const t=getLeave(course,p.姓名,year,month,o.d); // leave stored by calendar slot
+      const hasMeet=meetDays.includes(o.d)&&!isNextMonth;
+      const hasDept=deptDays.includes(o.d)&&isMgr&&!isNextMonth;
+      const personClassDays=getClassDaysForPerson(course,year,month,p.姓名);
+      const hasClass=personClassDays.includes(o.d)&&!isNextMonth;
+      const d=o.d; // keep d alias for onclick references
+
+      if(isSun){
+        r+=`<td class="day-sun day-locked"><span class="day-x">✕</span></td>`;
+      }else{
+        // Background priority: leave > meeting/dept/class > OT > holiday > sat > default
+        let bg='',extraTags='';
+        if(t){bg={s:'background:var(--red-bg)',c:'background:var(--green-bg)',b:'background:var(--pink-bg)',o:'background:var(--blue-bg)'}[t];}
+        else if(hasMeet){bg='background:var(--purple-bg)';}
+        else if(hasDept){bg='background:var(--orange-bg)';}
+        else if(hasClass){bg='background:var(--teal-bg)';}
+        else if(on){bg='background:var(--blue-bg)';}
+        else if(isHol){bg='background:#FFF3E0';}
+        else if(isSat){bg='background:#F5F8FF';}
+
+        // 他業帶組 & 出差
+        var yewuRows2=getYewuForPersonDay(course,year,month,d,p.姓名);
+        // 生日標記（在行事曆上顯示生日當天）
+        var pbday=getBirthday(p.姓名);
+        var isBirthday=pbday&&pbday[0]===o.m&&pbday[1]===o.d;
+        var tripRows2=getTripForPersonDay(course,year,month,d,p.姓名);
+        var hasYewu=yewuRows2.length>0;
+        var hasTrip=tripRows2.length>0;
+        var lbl=t?{s:'特休',c:'換休',b:'生日',o:'加班'}[t]:'';
+
+        // Collect events for this cell
+        var evs=[];
+        if(hasMeet){evs.push({lbl:'課會',color:'var(--purple-bg)',tc:'var(--purple)',time:getMeetingTime(course,year,month,d)});}
+        if(hasDept){evs.push({lbl:'部務',color:'var(--orange-bg)',tc:'var(--orange)',time:getDeptTime(course,year,month,d)});}
+        if(hasClass){evs.push({lbl:'上課',color:'var(--teal-bg)',tc:'var(--teal)',time:getClassTime(course,year,month,d)});}
+        for(var ei=0;ei<yewuRows2.length;ei++){var yr2=yewuRows2[ei];evs.push({lbl:yr2.yw||'他業',color:'#FFF9C4',tc:'#856404',time:yr2.time});}
+        for(var ti2=0;ti2<tripRows2.length;ti2++){var tr2=tripRows2[ti2];evs.push({lbl:'出差'+(tr2.loc||''),color:'#F3E5F5',tc:'#6A1B9A',time:'整天'});}
+        if(isBirthday&&!t){evs.push({lbl:'🎂',color:'var(--pink-bg)',tc:'var(--pink)',time:'整天'});}
+
+        var cellInner='';
+        var tdBg=bg; // default (leave color / OT / holiday / sat)
+
+        if(t){
+          // Leave: full cell with tag
+          cellInner='<div style="display:flex;align-items:center;justify-content:center;height:26px"><span class="tag tag-'+t+'">'+lbl+'</span></div>';
+        } else if(evs.length===0){
+          // No events - just bg mark
+          if(hasTrip){tdBg='background:#F3E5F5';}
+          else if(hasYewu){tdBg='background:#FFFDE7';}
+          else if(on){tdBg='background:var(--blue-bg)';}
+          else if(isHol){tdBg='background:#FFF3E0';}
+          else if(isSat){tdBg='background:#F5F8FF';}
+          else{tdBg='';}
+          cellInner=on&&!hasTrip&&!hasYewu?'<span style="font-size:9px;color:var(--blue);opacity:.4">班</span>':'';
+        } else {
+          // Events: build half-day flex layout
+          tdBg=''; // inner divs handle color
+          var amEv=null,pmEv=null;
+          for(var evi=0;evi<evs.length;evi++){
+            var ev=evs[evi];
+            if(!amEv&&(ev.time==='上午'||ev.time==='整天')){amEv=ev;}
+            else if(!pmEv&&(ev.time==='下午'||ev.time==='整天')&&ev!==amEv){pmEv=ev;}
+          }
+          if(!amEv&&!pmEv&&evs.length>0){amEv=evs[0];} // fallback
+          var topDiv=amEv
+            ?'<div style="flex:1;background:'+amEv.color+';display:flex;align-items:center;justify-content:center"><span style="font-size:8px;font-weight:600;color:'+amEv.tc+'">'+amEv.lbl+'</span></div>'
+            :'<div style="flex:1"></div>';
+          var botDiv=pmEv&&pmEv!==amEv
+            ?'<div style="flex:1;background:'+pmEv.color+';display:flex;align-items:center;justify-content:center"><span style="font-size:8px;font-weight:600;color:'+pmEv.tc+'">'+pmEv.lbl+'</span></div>'
+            :(amEv&&(amEv.time==='整天')
+              ?'' // 整天 - no bottom needed, top fills all via flex
+              :'<div style="flex:1"></div>');
+          if(amEv&&amEv.time==='整天'&&!pmEv){
+            // 整天: full cell one color
+            cellInner='<div style="display:flex;flex-direction:column;width:100%;height:26px"><div style="flex:1;background:'+amEv.color+';display:flex;align-items:center;justify-content:center"><span style="font-size:8px;font-weight:600;color:'+amEv.tc+'">'+amEv.lbl+'</span></div></div>';
+          } else {
+            cellInner='<div style="display:flex;flex-direction:column;width:100%;height:26px">'+topDiv+botDiv+'</div>';
+          }
+        }
+
+        r+=`<td class="day-click" style="${tdBg};padding:0;vertical-align:middle;height:26px" onclick="openPopup('${course}','${p.姓名}',${year},${month},${d},${d===1?true:false})">
+          ${cellInner}</td>`;
+      }
+    });
+    return `<tr>${r}</tr>`;
+  }).join('');
+
+  document.getElementById('cal-table').innerHTML=`<thead>${hdr}</thead><tbody>${otRow}${rows}</tbody>`;
+  updateCalStats(course,year,month,people,meetDays,deptDays,classDays);
+}
+
+function toggleOT(c,y,m,d){
+  if(!otOverride[c])otOverride[c]={};if(!otOverride[c][y])otOverride[c][y]={};if(!otOverride[c][y][m])otOverride[c][y][m]={};
+  otOverride[c][y][m][d]=!isOT(c,y,m,d);rebuildCal();
+}
+
+function checkAnomalies(course,year,month,people){
+  const daysInMonth=new Date(year,month,0).getDate();let warnings=[];
+  let otCount=0;for(let d=1;d<=daysInMonth;d++){if(isOT(course,year,month,d))otCount++;}
+  if(otCount<2)warnings.push(`⚠ 可加班日僅${otCount}天，低於最低(2天)！`);
+  const conds=getConds(course,month);
+  // Check special day conditions first (priority)
+  const specialConds=conds.filter(cond=>cond.limitType==='special');
+  const anomNextMonth=month===12?1:month+1;
+  // Build set of (m-d) keys covered by special
+  const specialDaySet=new Set(specialConds.map(c=>`${c.specialDayMonth}-${c.specialDayDate}`));
+  specialConds.forEach(cond=>{
+    const d=cond.specialDayDate;
+    const m=cond.specialDayMonth;
+    // For next month day 1, it appears as day=1 in the calendar but belongs to next month
+    const calDay=(m===month)?d:(m===anomNextMonth&&d===1?1:-1);
+    if(calDay===-1)return;
+    const cnt=people.filter(p=>{const lv=getLeave(course,p.姓名,year,month,calDay);return lv==='s'||lv==='c';}).length;
+    const label=m===month?`${month}/${d}`:`次月${d}日`;
+    if(cnt>cond.specialMax)warnings.push(`⚠ ${label} 特殊條件：特休+換休${cnt}人，超過上限${cond.specialMax}人`);
+  });
+  // Check combined s+c limit (skip days covered by special)
+  const combinedC=conds.find(cond=>cond.limitType==='combined');
+  if(combinedC){
+    for(let d=1;d<=daysInMonth;d++){
+      // day=1 maps to next month's 1st in calendar
+      const lookupKey=d===1?`${anomNextMonth}-1`:`${month}-${d}`;
+      if(specialDaySet.has(lookupKey))continue; // special takes priority
+      const cnt=people.filter(p=>{const lv=getLeave(course,p.姓名,year,month,d);return lv==='s'||lv==='c';}).length;
+      if(cnt>combinedC.combinedMax)warnings.push(`⚠ ${month}/${d} 特休+換休合計${cnt}人，超過上限${combinedC.combinedMax}人`);
+    }
+  }
+  const el=document.getElementById('anomaly-msg');
+  el.style.display=warnings.length?'inline':'none';
+  el.textContent=warnings.join(' ／ ');
+}
+
+function getPersonSpecialUsed(course,year,person){
+  // Count all months' special leave for this person this year
+  var total=0;
+  for(var m=1;m<=12;m++){
+    var dim2=new Date(year,m,0).getDate();
+    for(var d=1;d<=dim2;d++){
+      if(getLeave(course,person,year,m,d)==='s')total++;
+    }
+  }
+  // Also check next month's day 1 stored under current month
+  return total;
+}
+function getPersonSpecialUsedMonth(course,year,month,person){
+  var total=0;
+  var dim=new Date(year,month,0).getDate();
+  for(var d=1;d<=dim;d++){
+    if(getLeave(course,person,year,month,d)==='s')total++;
+  }
+  return total;
+}
+function updateCalStats(course,year,month,people,meetDays,deptDays,classDays){
+  const dim=new Date(year,month,0).getDate();
+  let s=0,c=0,b=0,o=0;
+  people.forEach(p=>{for(let d=1;d<=dim;d++){const t=getLeave(course,p.姓名,year,month,d);if(t==='s')s++;else if(t==='c')c++;else if(t==='b')b++;else if(t==='o')o++;}});
+  let otDays=0;for(let d=1;d<=dim;d++){if(isOT(course,year,month,d))otDays++;}
+  const conds4stats=getConds(course,month);
+  const combinedCond=conds4stats.find(x=>x.limitType==='combined');
+  const specialCount=conds4stats.filter(x=>x.limitType==='special').length;
+  const combinedPill=combinedCond?`<span class="spill" style="background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-bd)">特休+換休合計 ${s+c}人次</span>`:'';
+  const specialPill=specialCount>0?`<span class="spill" style="background:#FFF9C4;color:#856404;border:1px solid #FFE082">⭐特殊條件 ${specialCount}日</span>`:'';
+  document.getElementById('cal-stats').innerHTML=
+    `<span class="spill tag-s">特休 ${s}人次</span><span class="spill tag-c">換休 ${c}人次</span>${combinedPill}${specialPill}<span class="spill tag-b">生日 ${b}人次</span><span class="spill tag-o">加班 ${o}人次</span>`+
+    `<span class="spill" style="background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd)">可加班日 ${otDays}天${otDays<2?' ⚠':''}</span>`+
+    (meetDays.length?`<span class="spill tag-meeting">課會 ${meetDays.length}天</span>`:'')+
+    (deptDays.length?`<span class="spill tag-dept">部務 ${deptDays.length}天</span>`:'')+
+    (classDays.length?`<span class="spill tag-class">上課 ${classDays.length}天</span>`:'');
+}
+
+function openPopup(course,name,year,month,day,isNextMonthDay1=false){
+  popupCtx={course,name,year,month,day,isNextMonthDay1};
+  const hname=holidayName(month,day);
+  document.getElementById('popup-title').textContent=`${name} — ${month}月${day}日${hname?' ('+hname+')':''}`;
+  document.getElementById('popup').style.display='block';document.getElementById('overlay').style.display='block';
+}
+function closePopup(){document.getElementById('popup').style.display='none';document.getElementById('overlay').style.display='none';}
+function setCell(t){
+  const{course,name,year,month,day,isNextMonthDay1}=popupCtx;
+  if(t){
+    const people=ALL.filter(p=>p.課別===course);
+    const conds=getConds(course,month);
+    // 0. Check annual leave limit for special leave
+    if(t==='s'){
+      const pinfo=PERSON_INFO[name]||{};
+      const annualMax=pinfo.annual||0;
+      if(annualMax>0){
+        const used=getPersonSpecialUsed(course,year,name);
+        // If currently this cell already has 's', don't count it again
+        const currentCell=getLeave(course,name,year,month,day);
+        const effectiveUsed=currentCell==='s'?used-1:used;
+        if(effectiveUsed>=annualMax){
+          showCellBlock(`${name} 特休已用 ${effectiveUsed} 天，達到年度上限 ${annualMax} 天，無法填入`);
+          return;
+        }
+      }
+    }
+    // 1. Check "only" condition - block other types
+    const onlyC=conds.find(c=>c.limitType==='only');
+    if(onlyC&&t!==onlyC.allowType&&t!=='o'){
+      const LNAMES={s:'特休',c:'換休',b:'生日',o:'加班'};
+      showCellBlock(`本月限制：僅限填寫「${LNAMES[onlyC.allowType]}」假，無法填入「${LNAMES[t]}」`);
+      return;
+    }
+    // 2. Check special day condition (highest priority)
+    if(t==='s'||t==='c'){
+      // day here is the calendar day number within current month
+    // next month's 1 is represented in the calendar as day=1 but month context differs
+    // We match: if specialDayMonth===month and specialDayDate===day,
+    //           OR if specialDayMonth===nextMonth and specialDayDate===day (next month's 1)
+    const calNextMonth=month===12?1:month+1;
+    const effectiveMonth=isNextMonthDay1?calNextMonth:month;
+    const specialC=conds.find(c=>c.limitType==='special'&&
+      c.specialDayMonth===effectiveMonth&&c.specialDayDate===day
+    );
+      if(specialC){
+        const cnt=people.filter(p=>{
+          const lv=getLeave(course,p.姓名,year,month,day);
+          return (lv==='s'||lv==='c')&&p.姓名!==name;
+        }).length;
+        if(cnt>=specialC.specialMax){
+          showCellBlock(`${month}/${day} 特殊條件：特休＋換休合計已達上限 ${specialC.specialMax} 人（目前 ${cnt} 人），無法填入`);
+          return;
+        }
+      } else {
+        // 3. Check combined limit (only if no special for this day)
+        const combinedC=conds.find(c=>c.limitType==='combined');
+        if(combinedC){
+          const cnt=people.filter(p=>{
+            const lv=getLeave(course,p.姓名,year,month,day);
+            return (lv==='s'||lv==='c')&&p.姓名!==name;
+          }).length;
+          if(cnt>=combinedC.combinedMax){
+            showCellBlock(`${month}/${day} 特休＋換休合計已達上限 ${combinedC.combinedMax} 人（目前 ${cnt} 人），無法填入`);
+            return;
+          }
+        }
+      }
+    }
+  }
+  setLeave(course,name,year,month,day,t);closePopup();rebuildCal();
+}
+function showCellBlock(msg){
+  // Show a non-blocking toast inside popup instead of alert
+  let toast=document.getElementById('cell-block-toast');
+  if(!toast){
+    toast=document.createElement('div');
+    toast.id='cell-block-toast';
+    toast.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-60px);background:#A32D2D;color:#fff;padding:10px 16px;border-radius:8px;font-size:12px;font-weight:600;z-index:200;box-shadow:0 4px 16px rgba(0,0,0,.25);max-width:280px;text-align:center;';
+    document.body.appendChild(toast);
+  }
+  toast.textContent=msg;
+  toast.style.display='block';
+  closePopup();
+  setTimeout(()=>{toast.style.display='none';},3000);
+}
+
+// ===== MAINTAIN =====
+function loadMaintain(){
+  const course=document.getElementById('m-ke').value;
+  const month=parseInt(document.getElementById('m-month').value);
+  const year=2026;
+  if(!course){document.getElementById('maint-content').innerHTML='<div style="padding:30px;text-align:center;color:var(--text2)">請選擇部別與課別</div>';return;}
+  const people=ALL.filter(p=>p.課別===course);
+  const key=getMaintKey(course,year,month);
+  const d=getMaint(course,year,month);
+
+  let html=`<div style="display:flex;flex-direction:column;gap:12px">`;
+
+  // 人員設定
+  html+=`<div class="section-card"><div class="section-title">👤 人員設定 — ${course} ${year}年${month}月</div>
+  <div style="overflow-x:auto"><table class="maint-table"><thead><tr>
+    <th>姓名</th><th>交通工具</th><th>不執行區域</th><th>可執行他業點檢帶組</th><th>可執行他業(不含SQC)</th>
+  </tr></thead><tbody>`;
+  people.forEach(p=>{
+    const tr=d.transport[p.姓名]||'';
+    const nz=d.nozone[p.姓名]||'';
+    const yw=d.yewu[p.姓名]||[];
+    html+=`<tr>
+      <td style="font-weight:500;white-space:nowrap">${p.姓名}<br><span style="font-size:10px;color:var(--text2)">${p.職稱}</span></td>
+      <td><select onchange="setMaint('${key}','transport','${p.姓名}',this.value)">
+        <option value="">請選</option>${TRANSPORT.map(t2=>`<option${tr===t2?' selected':''}>${t2}</option>`).join('')}
+      </select></td>
+      <td><input type="text" value="${nz}" placeholder="區域" style="width:80px" oninput="setMaint('${key}','nozone','${p.姓名}',this.value)"></td>
+      <td><div class="cb-group">${YEWU_BAND.map(y=>`<label><input type="checkbox"${(d.yewuBand[p.姓名]||[]).includes(y)?' checked':''} onchange="toggleYewuField('${key}','yewuBand','${p.姓名}','${y}',this.checked)"> ${y}</label>`).join('')}</div></td>
+      <td><div class="cb-group">${YEWU_NOSQC.map(y=>`<label><input type="checkbox"${(d.yewuNosqc[p.姓名]||[]).includes(y)?' checked':''} onchange="toggleYewuField('${key}','yewuNosqc','${p.姓名}','${y}',this.checked)"> ${y}</label>`).join('')}</div></td>
+    </tr>`;
+  });
+  html+=`</tbody></table></div></div>`;
+
+  // 他業排程
+  html+=`<div class="section-card"><div class="section-title">🏢 他業點檢帶組排程</div>
+  <div style="overflow-x:auto"><table class="maint-table">
+  <thead><tr><th>類型</th><th>人員</th><th>日期</th><th>時段</th><th></th></tr></thead>
+  <tbody id="yr-${key}"></tbody></table></div>
+  <button class="btn btn-s" style="margin-top:6px;font-size:11px" onclick="addYewuRow('${key}','${course}','${month}')">＋ 新增排程</button></div>`;
+
+  // 出差 (多天)
+  html+=`<div class="section-card"><div class="section-title">✈️ 出差安排（可多天）</div>
+  <div style="overflow-x:auto"><table class="maint-table">
+  <thead><tr><th>地點</th><th>人員</th><th>出差日期（可多天）</th><th></th></tr></thead>
+  <tbody id="tr-${key}"></tbody></table></div>
+  <button class="btn btn-s" style="margin-top:6px;font-size:11px" onclick="addTripRow('${key}','${course}')">＋ 新增出差</button></div>`;
+
+  // 課會 / 部務 / 上課（合併）
+  html+=`<div class="section-card"><div class="section-title">📅 課會 / 部務 / 上課日期</div>
+  <div style="display:flex;gap:20px;flex-wrap:wrap">
+  <div><div style="font-size:11px;font-weight:600;margin-bottom:5px;color:var(--purple)">課會（整課出席）</div>
+  <table class="maint-table"><thead><tr><th>日期</th><th>時段</th><th></th></tr></thead>
+  <tbody id="mt-${key}-meeting"></tbody></table>
+  <button class="btn btn-s" style="margin-top:5px;font-size:11px" onclick="addMeetRow('${key}','meeting')">＋ 新增課會</button></div>
+  <div><div style="font-size:11px;font-weight:600;margin-bottom:5px;color:var(--orange)">部務（課長出席）</div>
+  <table class="maint-table"><thead><tr><th>日期</th><th>時段</th><th></th></tr></thead>
+  <tbody id="mt-${key}-dept"></tbody></table>
+  <button class="btn btn-s" style="margin-top:5px;font-size:11px" onclick="addMeetRow('${key}','dept')">＋ 新增部務</button></div>
+  <div><div style="font-size:11px;font-weight:600;margin-bottom:5px;color:var(--teal)">📚 上課（可選人員）</div>
+  <table class="maint-table"><thead><tr><th>日期</th><th>時段</th><th>課程名稱</th><th>出席人員</th><th></th></tr></thead>
+  <tbody id="cl-${key}"></tbody></table>
+  <button class="btn btn-s" style="margin-top:5px;font-size:11px" onclick="addClassRow('${key}','${course}')">＋ 新增上課</button></div>
+  </div></div>`;
+
+  html+=`</div>`;
+  document.getElementById('maint-content').innerHTML=html;
+
+  // Render saved rows
+  d.yewuRows.forEach((_,i)=>renderYewuRow(key,course,month,i));
+  d.tripRows.forEach((_,i)=>renderTripRow(key,course,i));
+  d.classRows.forEach((_,i)=>renderClassRow(key,course,i));
+  d.meeting.forEach((_,i)=>renderMeetRow(key,'meeting',i));
+  d.dept.forEach((_,i)=>renderMeetRow(key,'dept',i));
+}
+
+function setMaint(key,field,name,val){const d=getMaintByKey(key);if(d)d[field][name]=val;}
+function getMaintByKey(key){return maintainData[key];}
+function toggleYewu(key,name,yw,checked){
+  const d=getMaintByKey(key);if(!d)return;
+  if(!d.yewu[name])d.yewu[name]=[];
+  const arr=d.yewu[name];
+  if(checked){if(!arr.includes(yw))arr.push(yw);}
+  else{const i=arr.indexOf(yw);if(i>-1)arr.splice(i,1);}
+}
+function toggleYewuField(key,field,name,yw,checked){
+  const d=getMaintByKey(key);if(!d)return;
+  if(!d[field])d[field]={};
+  if(!d[field][name])d[field][name]=[];
+  const arr=d[field][name];
+  if(checked){if(!arr.includes(yw))arr.push(yw);}
+  else{const i=arr.indexOf(yw);if(i>-1)arr.splice(i,1);}
+
+  // 若勾選「帶組」且該項目也在「他業(不含SQC)」清單中，自動同步勾選
+  if(field==='yewuBand'&&YEWU_NOSQC.includes(yw)){
+    if(!d.yewuNosqc)d.yewuNosqc={};
+    if(!d.yewuNosqc[name])d.yewuNosqc[name]=[];
+    const nosqcArr=d.yewuNosqc[name];
+    if(checked){
+      if(!nosqcArr.includes(yw))nosqcArr.push(yw);
+    } else {
+      const ni=nosqcArr.indexOf(yw);if(ni>-1)nosqcArr.splice(ni,1);
+    }
+    // Update the nosqc checkbox UI
+    syncNosqcCheckbox(key,name,yw,checked);
+  }
+}
+function syncNosqcCheckbox(key,name,yw,checked){
+  // Find the nosqc checkbox for this person/item and update it
+  const tbody=document.querySelector('#maint-content table.maint-table tbody');
+  if(!tbody)return;
+  const rows=tbody.querySelectorAll('tr');
+  rows.forEach(function(tr){
+    const nameCell=tr.querySelector('td:first-child');
+    if(!nameCell||!nameCell.textContent.includes(name))return;
+    const nosqcCell=tr.querySelector('td:nth-child(5)');
+    if(!nosqcCell)return;
+    const labels=nosqcCell.querySelectorAll('label');
+    labels.forEach(function(label){
+      if(label.textContent.trim()===yw){
+        const cb=label.querySelector('input[type=checkbox]');
+        if(cb)cb.checked=checked;
+      }
+    });
+  });
+}
+
+// Yewu rows
+function addYewuRow(key,course,month){
+  const d=getMaintByKey(key);d.yewuRows.push({yw:'',person:'',date:'',time:'整天'});
+  renderYewuRow(key,course,month,d.yewuRows.length-1);
+}
+function renderYewuRow(key,course,month,i){
+  const people=ALL.filter(p=>p.課別===course);
+  const tbody=document.getElementById(`yr-${key}`);if(!tbody)return;
+  const row=getMaintByKey(key).yewuRows[i];
+  const tr=document.createElement('tr');tr.id=`yr-r-${key}-${i}`;
+  tr.innerHTML=`
+    <td><select onchange="getMaintByKey('${key}').yewuRows[${i}].yw=this.value">
+      <option value="">選類型</option>${YEWU.map(y=>`<option${row.yw===y?' selected':''}>${y}</option>`).join('')}
+    </select></td>
+    <td><select onchange="getMaintByKey('${key}').yewuRows[${i}].person=this.value">
+      <option value="">選人員</option>${people.map(p=>`<option${row.person===p.姓名?' selected':''}>${p.姓名}</option>`).join('')}
+    </select></td>
+    <td><input type="date" value="${row.date}" onchange="getMaintByKey('${key}').yewuRows[${i}].date=this.value"></td>
+    <td><select onchange="getMaintByKey('${key}').yewuRows[${i}].time=this.value">
+      ${TIME_OPTS.map(t=>`<option${row.time===t?' selected':''}>${t}</option>`).join('')}
+    </select></td>
+    <td><button class="btn btn-red" style="height:24px;padding:0 6px;font-size:11px" onclick="rmRow('${key}','yewuRows',${i},'yr-r-${key}-${i}')">✕</button></td>`;
+  tbody.appendChild(tr);
+}
+
+// Trip rows (multi-date)
+function addTripRow(key,course){
+  const d=getMaintByKey(key);d.tripRows.push({loc:'',person:'',dateFrom:'',dateTo:'',dates:[]});
+  renderTripRow(key,course,d.tripRows.length-1);
+}
+function renderTripRow(key,course,i){
+  const people=ALL.filter(p=>p.課別===course);
+  const tbody=document.getElementById(`tr-${key}`);if(!tbody)return;
+  const row=getMaintByKey(key).tripRows[i];
+  const tr=document.createElement('tr');tr.id=`tr-r-${key}-${i}`;
+  tr.innerHTML=`
+    <td><select onchange="getMaintByKey('${key}').tripRows[${i}].loc=this.value">
+      <option value="">選地點</option>${TRIPS.map(t=>`<option${row.loc===t?' selected':''}>${t}</option>`).join('')}
+    </select></td>
+    <td><select onchange="getMaintByKey('${key}').tripRows[${i}].person=this.value">
+      <option value="">選人員</option>${people.map(p=>`<option${row.person===p.姓名?' selected':''}>${p.姓名}</option>`).join('')}
+    </select></td>
+    <td>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        <input type="date" value="${row.dateFrom||''}" onchange="setTripRange('${key}',${i},'from',this.value)" title="開始日期">
+        <span style="font-size:12px;color:var(--text2)">～</span>
+        <input type="date" value="${row.dateTo||''}" onchange="setTripRange('${key}',${i},'to',this.value)" title="結束日期">
+        <span id="trip-days-${key}-${i}" style="font-size:11px;color:var(--blue);font-weight:600"></span>
+      </div>
+      <div id="trip-chips-${key}-${i}" style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px"></div>
+    </td>
+    <td><button class="btn btn-red" style="height:24px;padding:0 6px;font-size:11px" onclick="rmRow('${key}','tripRows',${i},'tr-r-${key}-${i}')">✕</button></td>`;
+  tbody.appendChild(tr);
+  refreshTripRange(key,i);
+}
+function setTripRange(key,i,side,val){
+  const row=getMaintByKey(key).tripRows[i];
+  if(side==='from')row.dateFrom=val;else row.dateTo=val;
+  refreshTripRange(key,i);
+}
+function refreshTripRange(key,i){
+  const row=getMaintByKey(key).tripRows[i];
+  const from=row.dateFrom,to=row.dateTo;
+  const daysEl=document.getElementById(`trip-days-${key}-${i}`);
+  const chipsEl=document.getElementById(`trip-chips-${key}-${i}`);
+  if(!from){if(daysEl)daysEl.textContent='';if(chipsEl)chipsEl.innerHTML='';return;}
+  const end=to||from;
+  const d1=new Date(from),d2=new Date(end);
+  if(d2<d1){if(daysEl)daysEl.textContent='⚠ 日期錯誤';return;}
+  const days=Math.round((d2-d1)/(86400000))+1;
+  if(daysEl)daysEl.textContent=`共${days}天`;
+  // generate chips
+  row.dates=[];
+  for(let dt=new Date(d1);dt<=d2;dt.setDate(dt.getDate()+1)){
+    row.dates.push(dt.toISOString().slice(0,10));
+  }
+  if(chipsEl)chipsEl.innerHTML=row.dates.map(dt=>`<span class="date-chip">${dt.slice(5)}</span>`).join('');
+}
+
+// Class rows
+function addClassRow(key,course){
+  const d=getMaintByKey(key);
+  d.classRows.push({date:'',time:'整天',note:'',persons:[]});
+  renderClassRow(key,course||'',d.classRows.length-1);
+}
+function renderClassRow(key,course,i){
+  var tbody=document.getElementById('cl-'+key);
+  if(!tbody)return;
+  var row=getMaintByKey(key).classRows[i];
+  if(!row.persons)row.persons=[];
+  var people=course?ALL.filter(function(p){return p.課別===course;}):[]; 
+
+  // Build multi-select dropdown for persons
+  var personHtml='';
+  if(people.length>0){
+    // Show selected names as tags + a dropdown to add more
+    var selectedTags=row.persons.map(function(name){
+      return '<span style="display:inline-flex;align-items:center;gap:3px;background:var(--teal-bg);color:var(--teal);border:1px solid var(--teal-bd);border-radius:4px;padding:1px 6px;font-size:11px;margin:1px">'
+        +name
+        +'<button type="button" style="border:none;background:none;color:var(--teal);cursor:pointer;font-size:12px;padding:0;line-height:1" '
+        +'data-key="'+key+'" data-idx="'+i+'" data-name="'+name+'" onclick="removeClassPerson(this)">×</button></span>';
+    }).join('');
+
+    var unselected=people.filter(function(p){return row.persons.indexOf(p.姓名)<0;});
+    var addSelect='';
+    if(unselected.length>0){
+      addSelect='<select style="height:26px;font-size:11px;margin-top:2px" data-key="'+key+'" data-idx="'+i+'" onchange="addClassPerson(this)">'
+        +'<option value="">＋ 新增人員</option>'
+        +unselected.map(function(p){return '<option value="'+p.姓名+'">'+p.姓名+'（'+p.職稱+'）</option>';}).join('')
+        +'</select>';
+    }
+    personHtml='<div style="display:flex;flex-wrap:wrap;gap:2px;align-items:center">'+selectedTags+addSelect+'</div>';
+  } else {
+    personHtml='<span style="font-size:11px;color:var(--text2)">（先選課別）</span>';
+  }
+
+  var timeOpts='';
+  for(var ti=0;ti<TIME_OPTS.length;ti++){
+    timeOpts+='<option'+(row.time===TIME_OPTS[ti]?' selected':'')+'>'+TIME_OPTS[ti]+'</option>';
+  }
+
+  var tr=document.createElement('tr');
+  tr.id='cl-r-'+key+'-'+i;
+  tr.innerHTML=
+    '<td><input type="date" value="'+(row.date||'')+'" data-key="'+key+'" data-idx="'+i+'" onchange="getMaintByKey(this.dataset.key).classRows[parseInt(this.dataset.idx)].date=this.value;rebuildCal()"></td>'+
+    '<td><select data-key="'+key+'" data-idx="'+i+'" onchange="getMaintByKey(this.dataset.key).classRows[parseInt(this.dataset.idx)].time=this.value;rebuildCal()">'+timeOpts+'</select></td>'+
+    '<td><input type="text" value="'+(row.note||'')+'" placeholder="課程名稱" style="width:100px" data-key="'+key+'" data-idx="'+i+'" oninput="getMaintByKey(this.dataset.key).classRows[parseInt(this.dataset.idx)].note=this.value"></td>'+
+    '<td id="cl-persons-'+key+'-'+i+'">'+personHtml+'</td>'+
+    '<td><button class="btn btn-red" style="height:24px;padding:0 6px;font-size:11px" data-key="'+key+'" data-i="'+i+'" onclick="rmClassRow(this)">✕</button></td>';
+  tbody.appendChild(tr);
+}
+function addClassPerson(sel){
+  var key=sel.dataset.key, i=parseInt(sel.dataset.idx), name=sel.value;
+  if(!name)return;
+  var row=getMaintByKey(key).classRows[i];
+  if(!row.persons)row.persons=[];
+  if(row.persons.indexOf(name)<0)row.persons.push(name);
+  sel.value='';
+  refreshClassPersonCell(key,i);
+  rebuildCal();
+}
+function removeClassPerson(btn){
+  var key=btn.dataset.key, i=parseInt(btn.dataset.idx), name=btn.dataset.name;
+  var row=getMaintByKey(key).classRows[i];
+  if(!row.persons)return;
+  var idx=row.persons.indexOf(name);
+  if(idx>-1)row.persons.splice(idx,1);
+  refreshClassPersonCell(key,i);
+  rebuildCal();
+}
+function refreshClassPersonCell(key,i){
+  var cell=document.getElementById('cl-persons-'+key+'-'+i);
+  if(!cell)return;
+  var row=getMaintByKey(key).classRows[i];
+  // find course from key
+  var parts=key.split('_');
+  var course=parts[0];
+  var people=ALL.filter(function(p){return p.課別===course;});
+  var selectedTags=row.persons.map(function(name){
+    return '<span style="display:inline-flex;align-items:center;gap:3px;background:var(--teal-bg);color:var(--teal);border:1px solid var(--teal-bd);border-radius:4px;padding:1px 6px;font-size:11px;margin:1px">'
+      +name
+      +'<button type="button" style="border:none;background:none;color:var(--teal);cursor:pointer;font-size:12px;padding:0;line-height:1" '
+      +'data-key="'+key+'" data-idx="'+i+'" data-name="'+name+'" onclick="removeClassPerson(this)">×</button></span>';
+  }).join('');
+  var unselected=people.filter(function(p){return row.persons.indexOf(p.姓名)<0;});
+  var addSelect='';
+  if(unselected.length>0){
+    addSelect='<select style="height:26px;font-size:11px;margin-top:2px" data-key="'+key+'" data-idx="'+i+'" onchange="addClassPerson(this)">'
+      +'<option value="">＋ 新增人員</option>'
+      +unselected.map(function(p){return '<option value="'+p.姓名+'">'+p.姓名+'（'+p.職稱+'）</option>';}).join('')
+      +'</select>';
+  }
+  cell.innerHTML='<div style="display:flex;flex-wrap:wrap;gap:2px;align-items:center">'+selectedTags+addSelect+'</div>';
+}
+function rmClassRow(btn){
+  var key=btn.dataset.key, i=parseInt(btn.dataset.i);
+  getMaintByKey(key).classRows.splice(i,1);
+  document.getElementById('cl-r-'+key+'-'+i).remove();
+  rebuildCal();
+}
+// toggleClassPerson replaced by addClassPerson/removeClassPerson
+
+// Meeting rows
+function addMeetRow(key,type){
+  const d=getMaintByKey(key);d[type].push({date:'',time:'整天'});
+  renderMeetRow(key,type,d[type].length-1);
+}
+function renderMeetRow(key,type,i){
+  const tbody=document.getElementById(`mt-${key}-${type}`);if(!tbody)return;
+  const row=getMaintByKey(key)[type][i];
+  const tr=document.createElement('tr');tr.id=`mt-r-${key}-${type}-${i}`;
+  tr.innerHTML=`
+    <td><input type="date" value="${row.date||''}" onchange="getMaintByKey('${key}')['${type}'][${i}].date=this.value;rebuildCal()"></td>
+    <td><select onchange="getMaintByKey('${key}')['${type}'][${i}].time=this.value;rebuildCal()">
+      ${TIME_OPTS.map(t=>`<option${row.time===t?' selected':''}>${t}</option>`).join('')}
+    </select></td>
+    <td><button class="btn btn-red" style="height:24px;padding:0 6px;font-size:11px" onclick="rmRow('${key}','${type}',${i},'mt-r-${key}-${type}-${i}');rebuildCal()">✕</button></td>`;
+  tbody.appendChild(tr);
+}
+
+function rmRow(key,field,i,rowId){
+  const d=getMaintByKey(key);if(d&&d[field])d[field].splice(i,1);
+  const el=document.getElementById(rowId);if(el)el.remove();
+}
+
+// ===== CONDITIONS =====
+// Special rows temp storage
+let specialRowsTemp=[];
+function condTypeChange(){
+  const t=document.querySelector('input[name="cond-type"]:checked').value;
+  document.getElementById('cond-form-combined').style.display=t==='combined'?'flex':'none';
+  document.getElementById('cond-form-special').style.display=t==='special'?'flex':'none';
+  if(t==='special'&&specialRowsTemp.length===0){addSpecialRow();}
+}
+function addSpecialRow(){
+  specialRowsTemp.push({day:'',max:4});
+  renderSpecialRows();
+}
+function removeSpecialRow(i){
+  specialRowsTemp.splice(i,1);
+  renderSpecialRows();
+}
+function buildSpecialDayOptions(month,selectedVal){
+  const dim=new Date(2026,month,0).getDate();
+  const nextMonth=month===12?1:month+1;
+  const dayOrder=[];
+  for(let d=2;d<=dim;d++)dayOrder.push({m:month,d:d});
+  dayOrder.push({m:nextMonth,d:1});
+  return dayOrder.map(function(o){
+    const val=o.m+'-'+o.d;
+    const label=o.m===month?(o.d+'日'):('次月1日('+nextMonth+'/1)');
+    const sel=selectedVal===val?' selected':'';
+    return '<option value="'+val+'"'+sel+'>'+label+'</option>';
+  }).join('');
+}
+function renderSpecialRows(){
+  const container=document.getElementById('special-rows');
+  if(!container)return;
+  const month=getFillMonth();
+  container.innerHTML=specialRowsTemp.map(function(r,i){
+    return '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">'+
+      '<select style="height:28px" onchange="specialRowsTemp['+i+'].day=this.value">'+
+      '<option value="">選日期</option>'+
+      buildSpecialDayOptions(month,r.day||'')+
+      '</select>'+
+      '<span style="font-size:12px">特休＋換休合計上限</span>'+
+      '<input type="number" value="'+r.max+'" min="1" max="99" style="width:46px;height:28px;padding:0 6px" onchange="specialRowsTemp['+i+'].max=parseInt(this.value)||1">'+
+      '<span style="font-size:12px">人</span>'+
+      '<button type="button" style="background:var(--red-bg);color:#A32D2D;border:1px solid var(--red-bd);border-radius:4px;padding:2px 7px;font-size:11px;cursor:pointer" onclick="removeSpecialRow('+i+')">✕</button>'+
+      '</div>';
+  }).join('');
+}
+function toggleLeavePanel(){
+  var course=getFillCourse();
+  if(!course){showCellBlock('請先選擇課別');return;}
+  var existing=document.getElementById('leave-summary-panel');
+  if(existing){existing.remove();return;}
+  var people=ALL.filter(function(p){return p.課別===course;});
+  var rows=people.map(function(p){
+    var info=PERSON_INFO[p.姓名]||{};
+    var annual=info.annual||0;
+    var bday=info.bday?info.bday[0]+'月'+info.bday[1]+'日':'—';
+    var hire=info.hire?info.hire.slice(0,10):'—';
+    var bg=annual>=15?'#EAF3DE':annual>=10?'#E6F1FB':annual>0?'#FBEAF0':'#F7F6F2';
+    return '<tr style="background:'+bg+'">'
+      +'<td style="padding:4px 8px;border:1px solid #eee;font-weight:500;font-size:12px">'+p.姓名+'</td>'
+      +'<td style="padding:4px 8px;border:1px solid #eee;font-size:11px;color:#666">'+p.職稱+'</td>'
+      +'<td style="padding:4px 8px;border:1px solid #eee;font-size:12px;font-weight:600;color:#185FA5;text-align:center">'+annual+'天</td>'
+      +'<td style="padding:4px 8px;border:1px solid #eee;font-size:11px;text-align:center">'+bday+'</td>'
+      +'<td style="padding:4px 8px;border:1px solid #eee;font-size:11px;color:#666">'+hire+'</td>'
+      +'</tr>';
+  }).join('');
+  var panel=document.createElement('div');
+  panel.id='leave-summary-panel';
+  panel.style.cssText='border:1px solid var(--blue-bd);border-radius:8px;padding:12px;background:#fff;margin-top:4px';
+  panel.innerHTML='<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'
+    +'<span style="font-size:12px;font-weight:600;color:#185FA5">📊 '+course+' 特休總覽</span>'
+    +'<button onclick="closeLeaveSummary()" style="margin-left:auto;background:#FCEBEB;color:#A32D2D;border:1px solid #F7C1C1;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer">關閉</button>'
+    +'</div>'
+    +'<div style="overflow-x:auto"><table style="border-collapse:collapse;width:100%">'
+    +'<thead><tr style="background:#F7F6F2">'
+    +'<th style="padding:5px 8px;border:1px solid #eee;font-size:11px;text-align:left">姓名</th>'
+    +'<th style="padding:5px 8px;border:1px solid #eee;font-size:11px;text-align:left">職稱</th>'
+    +'<th style="padding:5px 8px;border:1px solid #eee;font-size:11px;text-align:center">特休總天數</th>'
+    +'<th style="padding:5px 8px;border:1px solid #eee;font-size:11px;text-align:center">已用</th>'
+    +'<th style="padding:5px 8px;border:1px solid #eee;font-size:11px;text-align:center">剩餘</th>'
+    +'<th style="padding:5px 8px;border:1px solid #eee;font-size:11px;text-align:center">生日</th>'
+    +'<th style="padding:5px 8px;border:1px solid #eee;font-size:11px;text-align:left">到職日</th>'
+    +'</tr></thead><tbody>'+rows+'</tbody></table></div>';
+  var fillPanel=document.getElementById('panel-fill');
+  var calOuter=document.getElementById('cal-outer');
+  fillPanel.insertBefore(panel, calOuter);
+}
+function closeLeaveSummary(){
+  var p=document.getElementById('leave-summary-panel');
+  if(p)p.remove();
+}
+function toggleCondForm(){
+  const f=document.getElementById('cond-inline-form');
+  f.style.display=f.style.display==='none'?'block':'none';
+}
+function getFillCourse(){return document.getElementById('f-ke').value;}
+function getFillMonth(){return parseInt(document.getElementById('f-month').value);}
+
+function renderFillConds(){
+  const course=getFillCourse();
+  const month=getFillMonth();
+  const sec=document.getElementById('fill-conds-section');
+  if(!course){sec.style.display='none';return;}
+  sec.style.display='block';
+  document.getElementById('fill-conds-course-label').textContent=`${course} ／ ${month}月`;
+  const conds=getConds(course,month);
+  const LNAMES={s:'特休',c:'換休',b:'生日',o:'加班'};
+  const list=document.getElementById('fill-cond-list');
+  if(conds.length===0){
+    list.innerHTML='<div style="font-size:11px;color:var(--purple);opacity:.7">本課本月尚無條件設定</div>';
+    return;
+  }
+  list.innerHTML=conds.map((cond,i)=>{
+    let desc='';
+    if(cond.limitType==='combined')desc=`特休＋換休 每日合計上限 ${cond.combinedMax} 人`;
+    else if(cond.limitType==='special')desc=`⭐ 特殊（優先）：${cond.note}`;
+    else desc=cond.note||'備註';
+    return `<div style="display:flex;align-items:center;gap:6px;padding:4px 6px;background:#fff;border-radius:5px;border:1px solid var(--purple-bd)">
+      <span style="font-size:11px;font-weight:600;color:var(--purple)">${desc}</span>
+      ${cond.note&&cond.limitType!=='note'?`<span style="font-size:10px;color:var(--text2)">— ${cond.note}</span>`:''}
+      <button onclick="removeCond('${course}',${month},${i})" style="margin-left:auto;background:var(--red-bg);color:#A32D2D;border:1px solid var(--red-bd);border-radius:3px;padding:1px 6px;font-size:10px;cursor:pointer">✕</button>
+    </div>`;
+  }).join('');
+}
+function addConditionInline(){
+  const course=getFillCourse();
+  const month=getFillMonth();
+  if(!course){showCellBlock('請先選擇課別');return;}
+  const limitType=document.querySelector('input[name="cond-type"]:checked').value;
+  let combinedMax=null,specialDays=null;
+  if(limitType==='combined'){
+    combinedMax=parseInt(document.getElementById('cond-combined-count').value)||4;
+    let autoNote=`特休＋換休 每日合計上限 ${combinedMax} 人`;
+    getConds(course,month).push({note:autoNote,limitType:'combined',combinedMax});
+  }else if(limitType==='special'){
+    const valid=specialRowsTemp.filter(r=>r.day&&r.max);
+    if(valid.length===0){showCellBlock('請至少設定一個日期');return;}
+    valid.forEach(r=>{
+      // r.day format: "m-d" e.g. "5-15" or "6-1" for next month
+      const parts=r.day.toString().split('-');
+      const dm=parseInt(parts[0]),dd=parseInt(parts[1]);
+      const isNext=dm!==month;
+      const label=isNext?`次月${dd}日(${dm}/${dd})`:`${dm}/${dd}`;
+      getConds(course,month).push({
+        note:`${label} 特休＋換休合計上限 ${r.max} 人`,
+        limitType:'special',
+        specialDay:r.day,   // "m-d" string
+        specialDayMonth:dm,
+        specialDayDate:dd,
+        specialMax:r.max
+      });
+    });
+    specialRowsTemp=[];
+  }
+  document.getElementById('cond-inline-form').style.display='none';
+  renderFillConds();
+  rebuildCal();
+}
+function renderConditions(){renderFillConds();}
+function addCondition(){addConditionInline();}
+function removeCond(course,month,idx){
+  getConds(course,month).splice(idx,1);
+  renderFillConds();
+  rebuildCal();
+}
+
+// ===== EXPORT =====
+function renderExport(){
+  const month=parseInt(document.getElementById('exp-month').value),year=2026;
+  document.getElementById('export-grid').innerHTML=COURSES.map(course=>{
+    const people=ALL.filter(p=>p.課別===course);
+    const dim=new Date(year,month,0).getDate();
+    let s=0,c=0,b=0,o=0;
+    people.forEach(p=>{for(let d=1;d<=dim;d++){const t=getLeave(course,p.姓名,year,month,d);if(t==='s')s++;else if(t==='c')c++;else if(t==='b')b++;else if(t==='o')o++;}});
+    let otDays=0;for(let d=1;d<=dim;d++){if(isOT(course,year,month,d))otDays++;}
+    const warn=otDays<2?'<span class="tag tag-warn">⚠</span>':'';
+    return `<div class="export-card">
+      <div class="export-card-title">${course} ${warn}</div>
+      <div class="export-card-sub">${people.length}人 ／ 可加班${otDays}天</div>
+      <div style="display:flex;gap:4px;flex-wrap:wrap;margin:2px 0">
+        ${s>0?`<span class="tag tag-s">特休${s}</span>`:''}
+        ${c>0?`<span class="tag tag-c">換休${c}</span>`:''}
+        ${b>0?`<span class="tag tag-b">生日${b}</span>`:''}
+        ${o>0?`<span class="tag tag-o">加班${o}人次</span>`:''}
+        ${(s+c+b+o)===0?'<span style="font-size:11px;color:var(--text2)">尚未填寫</span>':''}
+      </div>
+      <button class="btn btn-p" style="width:100%" onclick="doExport('${course}',${year},${month})">📥 假勤 CSV</button>
+      <button class="btn btn-orange" style="width:100%" onclick="doYewuExport('${course}',${year},${month})">📅 他業點檢行事曆</button>
+    </div>`;
+  }).join('');
+}
+
+function doExport(course,year,month){
+  const people=ALL.filter(p=>p.課別===course);
+  const dim=new Date(year,month,0).getDate();
+  const dayOrder=[];for(let d=2;d<=dim;d++)dayOrder.push(d);dayOrder.push(1);
+  const TN={s:'特休',c:'換休',b:'生日',o:'加班'};
+  const rows=[
+    ['工號','姓名','職稱',...dayOrder.map(d=>`${month}/${d}`)].join(','),
+    ...people.map(p=>[p.工號,p.姓名,p.職稱,...dayOrder.map(d=>getLeave(course,p.姓名,year,month,d)?TN[getLeave(course,p.姓名,year,month,d)]:'')].join(','))
+  ].join('\n');
+  downloadCSV(rows,`日翊_${course}_${year}年${month}月假勤.csv`);
+}
+
+function doYewuExport(course,year,month){
+  const key=getMaintKey(course,year,month);
+  const d=getMaintByKey(key)||{yewuRows:[],tripRows:[]};
+  const rows=[['課別','類型','人員/說明','日期','時段'].join(',')];
+  (d.yewuRows||[]).forEach(r=>{if(r.date)rows.push([course,r.yw||'他業',r.person,r.date,r.time].join(','));});
+  (d.tripRows||[]).forEach(r=>{(r.dates||[]).forEach(dt=>{rows.push([course,'出差-'+r.loc,r.person,dt,'整天'].join(','));});});
+  downloadCSV(rows.join('\n'),`日翊_${course}_${year}年${month}月他業點檢.csv`);
+  showResult(`✓ ${course} 他業點檢行事曆已下載`);
+}
+
+function exportYewuCalendar(){
+  const month=parseInt(document.getElementById('exp-month').value),year=2026;
+  const rows=[['課別','類型','人員/說明','日期','時段'].join(',')];
+  COURSES.forEach(course=>{
+    const key=getMaintKey(course,year,month);
+    const d=getMaintByKey(key)||{yewuRows:[],tripRows:[]};
+    (d.yewuRows||[]).forEach(r=>{if(r.date)rows.push([course,r.yw||'他業',r.person,r.date,r.time].join(','));});
+    (d.tripRows||[]).forEach(r=>{(r.dates||[]).forEach(dt=>{rows.push([course,'出差-'+r.loc,r.person,dt,'整天'].join(','));});});
+  });
+  downloadCSV(rows.join('\n'),`日翊_全部課別_${year}年${month}月他業點檢行事曆.csv`);
+  showResult(`✓ 全部課別他業點檢行事曆已下載`);
+}
+
+function downloadCSV(content,filename){
+  const blob=new Blob(['\uFEFF'+content],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=filename;a.click();URL.revokeObjectURL(url);
+}
+function showResult(msg){
+  const el=document.getElementById('export-result');
+  el.innerHTML=`<div style="background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd);padding:8px 12px;border-radius:6px;font-size:12px">${msg}</div>`;
+  setTimeout(()=>{el.innerHTML='';},4000);
+}
+
+
+function getConds(course,month){
+  if(!conditionsMap[course])conditionsMap[course]={};
+  if(!conditionsMap[course][month])conditionsMap[course][month]=[];
+  return conditionsMap[course][month];
+}
+function getAllConds(month){
+  // gather all courses' conditions for a given month (used for display)
+  const all=[];
+  Object.keys(conditionsMap).forEach(course=>{
+    (conditionsMap[course][month]||[]).forEach(c=>all.push({...c,course}));
+  });
+  return all;
+}
+
+// ===== INIT =====
+setInterval(()=>{document.getElementById('clk').textContent=new Date().toLocaleString('zh-TW',{hour12:false});},1000);
+document.getElementById('clk').textContent=new Date().toLocaleString('zh-TW',{hour12:false});
+initMonthSelects();
+setTimeout(()=>{
+  document.getElementById('f-month').value='5';
+  document.getElementById('m-month').value='5';
+  renderFillConds();
+  const em=document.getElementById('exp-month');if(em){em.value='5';renderExport();}
+},50);
+</script>
+</body></html>
